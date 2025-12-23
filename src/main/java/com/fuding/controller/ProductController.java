@@ -1,0 +1,113 @@
+package com.fuding.controller;
+
+import com.fuding.common.Result;
+import com.fuding.entity.Product;
+import com.fuding.service.ProductService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 产品控制器
+ */
+@RestController
+@RequestMapping("/product")
+@CrossOrigin
+public class ProductController {
+
+    @Autowired
+    private ProductService productService;
+
+    /**
+     * 分页查询产品
+     */
+    @GetMapping("/list")
+    public Result<Page<Product>> getProductList(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String keyword) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createTime"));
+            Page<Product> products = productService.findProducts(pageable, categoryId, keyword);
+            return Result.success(products);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 根据ID获取产品详情
+     */
+    @GetMapping("/{id}")
+    public Result<Product> getProductById(@PathVariable Long id) {
+        try {
+            Product product = productService.findById(id);
+            return Result.success(product);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取热门产品
+     */
+    @GetMapping("/hot")
+    public Result<Page<Product>> getHotProducts(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Product> products = productService.findHotProducts(pageable);
+            return Result.success(products);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 添加产品（管理员）
+     */
+    @PostMapping("/add")
+    public Result<Product> addProduct(@RequestBody Product product) {
+        try {
+            Product savedProduct = productService.saveProduct(product);
+            return Result.success("添加成功", savedProduct);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 更新产品（管理员）
+     */
+    @PutMapping("/update")
+    public Result<Product> updateProduct(@RequestBody Product product) {
+        try {
+            Product updatedProduct = productService.updateProduct(product);
+            return Result.success("更新成功", updatedProduct);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 删除产品（管理员）
+     */
+    @DeleteMapping("/{id}")
+    public Result<Void> deleteProduct(@PathVariable Long id) {
+        try {
+            productService.delete(id);
+            return Result.success("删除成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+}
+

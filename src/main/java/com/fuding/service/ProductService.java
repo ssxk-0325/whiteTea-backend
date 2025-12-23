@@ -1,0 +1,42 @@
+package com.fuding.service;
+
+import com.fuding.entity.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+/**
+ * 产品服务接口
+ */
+public interface ProductService {
+
+    /**
+     * 分页查询产品
+     */
+    Page<Product> findProducts(Pageable pageable, Long categoryId, String keyword);
+
+    /**
+     * 根据ID查找产品
+     */
+    Product findById(Long id);
+
+    /**
+     * 保存产品
+     */
+    Product saveProduct(Product product);
+
+    /**
+     * 更新产品
+     */
+    Product updateProduct(Product product);
+
+    /**
+     * 删除产品
+     */
+    void delete(Long id);
+
+    /**
+     * 查找热门产品
+     */
+    Page<Product> findHotProducts(Pageable pageable);
+}
+
