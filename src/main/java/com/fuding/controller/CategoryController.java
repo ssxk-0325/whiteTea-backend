@@ -21,13 +21,28 @@ public class CategoryController {
     private CategoryMapper categoryMapper;
 
     /**
-     * 获取所有分类
+     * 获取所有分类（前端用，只返回启用的）
      */
     @GetMapping("/list")
     public Result<List<Category>> getCategoryList() {
         try {
             LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Category::getStatus, 1);
+            wrapper.orderByAsc(Category::getSortOrder);
+            List<Category> categories = categoryMapper.selectList(wrapper);
+            return Result.success(categories);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取所有分类（管理后台用，包括禁用的）
+     */
+    @GetMapping("/all")
+    public Result<List<Category>> getAllCategories() {
+        try {
+            LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
             wrapper.orderByAsc(Category::getSortOrder);
             List<Category> categories = categoryMapper.selectList(wrapper);
             return Result.success(categories);

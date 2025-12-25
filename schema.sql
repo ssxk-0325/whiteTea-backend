@@ -260,7 +260,7 @@ VALUES ('admin', 'E10ADC3949BA59ABBE56E057F20F883E', '管理员', 1, 1, NOW(), N
 
 -- 如果登录失败，请取消下面的注释并执行，将密码更新为正确的加盐MD5值
 -- 密码 admin123 加盐后的MD5值：需要运行程序生成
--- UPDATE `tb_user` SET `password` = '正确的加盐MD5值' WHERE `username` = 'admin';
+-- UPDATE `tb_user` SET `password` = '7689D227F21769F641941E9DABD03370' WHERE `username` = 'admin';
 
 -- 插入默认分类数据
 INSERT INTO `tb_category` (`name`, `description`, `parent_id`, `sort_order`, `status`, `create_time`, `update_time`) VALUES
