@@ -1,7 +1,6 @@
 package com.fuding.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fuding.entity.Cart;
 import com.fuding.entity.Product;
@@ -65,7 +64,15 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
     public List<Cart> getUserCart(Long userId) {
         LambdaQueryWrapper<Cart> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Cart::getUserId, userId);
-        return cartMapper.selectList(wrapper);
+        List<Cart> cartList = cartMapper.selectList(wrapper);
+        
+        // 关联查询产品信息
+        for (Cart cart : cartList) {
+            Product product = productMapper.selectById(cart.getProductId());
+            cart.setProduct(product);
+        }
+        
+        return cartList;
     }
 
     @Override

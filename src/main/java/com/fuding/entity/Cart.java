@@ -37,4 +37,10 @@ public class Cart extends BaseEntity {
      */
     @TableField("selected")
     private Integer selected = 1;
+
+    /**
+     * 产品信息（不映射到数据库）
+     */
+    @TableField(exist = false)
+    private Product product;
 }
