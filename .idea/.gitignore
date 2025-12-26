@@ -6,3 +6,24 @@
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+
+# Java 编译产物（核心：忽略 target 目录）
+target/
+# Gradle 编译产物（如果是 Gradle 项目）
+build/
+# IDEA 配置文件（可选，避免提交 IDE 个性化配置）
+.idea/
+*.iml
+*.iws
+*.ipr
+# Maven 本地仓库缓存
+.mvn/
+# 日志文件
+logs/
+*.log
+# 临时文件
+*.tmp
+*.bak
+# 操作系统隐藏文件
+.DS_Store
+Thumbs.db
