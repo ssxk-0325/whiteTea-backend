@@ -60,8 +60,16 @@ public class JwtUtil {
      * 从Token中获取用户ID
      */
     public Long getUserIdFromToken(String token) {
-        Claims claims = getClaimsFromToken(token);
-        return Long.valueOf(claims.get("userId").toString());
+        try {
+            Claims claims = getClaimsFromToken(token);
+            return Long.valueOf(claims.get("userId").toString());
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            throw new RuntimeException("Token已过期，请重新登录");
+        } catch (io.jsonwebtoken.JwtException e) {
+            throw new RuntimeException("Token无效，请重新登录");
+        } catch (Exception e) {
+            throw new RuntimeException("Token解析失败：" + e.getMessage());
+        }
     }
 
     /**
