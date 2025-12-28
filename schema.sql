@@ -248,6 +248,77 @@ CREATE TABLE `tb_community_post` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='社区帖子表';
 
 -- ============================================
+-- 11. 社区评论表
+-- ============================================
+DROP TABLE IF EXISTS `tb_community_comment`;
+CREATE TABLE `tb_community_comment` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `post_id` BIGINT(20) NOT NULL COMMENT '帖子ID',
+  `user_id` BIGINT(20) NOT NULL COMMENT '用户ID',
+  `parent_id` BIGINT(20) DEFAULT 0 COMMENT '父评论ID（用于回复，0表示顶级评论）',
+  `content` TEXT NOT NULL COMMENT '评论内容',
+  `like_count` INT(11) DEFAULT 0 COMMENT '点赞数',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_post_id` (`post_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_parent_id` (`parent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='社区评论表';
+
+-- ============================================
+-- 12. 社区帖子点赞表
+-- ============================================
+DROP TABLE IF EXISTS `tb_community_post_like`;
+CREATE TABLE `tb_community_post_like` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `post_id` BIGINT(20) NOT NULL COMMENT '帖子ID',
+  `user_id` BIGINT(20) NOT NULL COMMENT '用户ID',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_post_user` (`post_id`, `user_id`),
+  KEY `idx_post_id` (`post_id`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='社区帖子点赞表';
+
+-- ============================================
+-- 13. 社区帖子点踩表
+-- ============================================
+DROP TABLE IF EXISTS `tb_community_post_dislike`;
+CREATE TABLE `tb_community_post_dislike` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `post_id` BIGINT(20) NOT NULL COMMENT '帖子ID',
+  `user_id` BIGINT(20) NOT NULL COMMENT '用户ID',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_post_user` (`post_id`, `user_id`),
+  KEY `idx_post_id` (`post_id`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='社区帖子点踩表';
+
+-- ============================================
+-- 14. 社区帖子收藏表
+-- ============================================
+DROP TABLE IF EXISTS `tb_community_post_favorite`;
+CREATE TABLE `tb_community_post_favorite` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `post_id` BIGINT(20) NOT NULL COMMENT '帖子ID',
+  `user_id` BIGINT(20) NOT NULL COMMENT '用户ID',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_post_user` (`post_id`, `user_id`),
+  KEY `idx_post_id` (`post_id`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='社区帖子收藏表';
+
+-- ============================================
 -- 初始化数据
 -- ============================================
 
