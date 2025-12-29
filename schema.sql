@@ -182,9 +182,12 @@ DROP TABLE IF EXISTS `tb_culture_content`;
 CREATE TABLE `tb_culture_content` (
   `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `title` VARCHAR(200) NOT NULL COMMENT '标题',
-  `content` TEXT COMMENT '内容',
+  `content` TEXT COMMENT '内容（文章内容或视频描述）',
   `cover_image` VARCHAR(255) DEFAULT NULL COMMENT '封面图片',
-  `type` TINYINT(1) DEFAULT 1 COMMENT '类型：1-白茶知识，2-制作工艺，3-品鉴技巧，4-历史文化',
+  `content_type` TINYINT(1) DEFAULT 1 COMMENT '内容类型：1-文章，2-视频',
+  `type` TINYINT(1) DEFAULT 1 COMMENT '分类类型：1-白茶知识，2-制作工艺，3-品鉴技巧，4-历史文化',
+  `video_url` VARCHAR(500) DEFAULT NULL COMMENT '视频URL（仅视频类型使用）',
+  `video_duration` INT(11) DEFAULT NULL COMMENT '视频时长（秒，仅视频类型使用）',
   `view_count` INT(11) DEFAULT 0 COMMENT '浏览量',
   `like_count` INT(11) DEFAULT 0 COMMENT '点赞数',
   `status` TINYINT(1) DEFAULT 1 COMMENT '状态：0-草稿，1-发布',
@@ -192,6 +195,7 @@ CREATE TABLE `tb_culture_content` (
   `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
   `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
   PRIMARY KEY (`id`),
+  KEY `idx_content_type` (`content_type`),
   KEY `idx_type` (`type`),
   KEY `idx_status` (`status`),
   KEY `idx_view_count` (`view_count`)
