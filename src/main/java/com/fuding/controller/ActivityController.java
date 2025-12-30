@@ -120,5 +120,89 @@ public class ActivityController {
             return Result.error(e.getMessage());
         }
     }
+
+    // ========== 管理员接口 ==========
+
+    /**
+     * 管理员获取活动列表（包括所有状态）
+     */
+    @GetMapping("/admin/list")
+    public Result<IPage<ExperienceActivity>> adminGetActivityList(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) Integer type,
+            @RequestParam(required = false) String keyword,
+            HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            jwtUtil.getUserIdFromToken(token); // 验证token有效性
+
+            Page<ExperienceActivity> activityPage = new Page<>(page, size);
+            IPage<ExperienceActivity> result = activityService.getAdminActivityList(activityPage, type, keyword);
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员创建活动
+     */
+    @PostMapping("/admin/create")
+    public Result<ExperienceActivity> adminCreateActivity(@RequestBody Map<String, Object> params, HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            jwtUtil.getUserIdFromToken(token); // 验证token有效性
+
+            ExperienceActivity activity = activityService.createActivity(params);
+            return Result.success("创建成功", activity);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员更新活动
+     */
+    @PutMapping("/admin/update")
+    public Result<ExperienceActivity> adminUpdateActivity(@RequestBody Map<String, Object> params, HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            jwtUtil.getUserIdFromToken(token); // 验证token有效性
+
+            ExperienceActivity activity = activityService.updateActivity(params);
+            return Result.success("更新成功", activity);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员删除活动
+     */
+    @DeleteMapping("/admin/{id}")
+    public Result<Void> adminDeleteActivity(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            jwtUtil.getUserIdFromToken(token); // 验证token有效性
+
+            activityService.deleteActivity(id);
+            return Result.success("删除成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }
 

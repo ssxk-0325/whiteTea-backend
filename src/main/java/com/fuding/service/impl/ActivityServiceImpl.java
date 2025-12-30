@@ -14,9 +14,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -181,6 +183,105 @@ public class ActivityServiceImpl extends ServiceImpl<ExperienceActivityMapper, E
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String random = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         return prefix + timestamp + random;
+    }
+
+    @Override
+    public IPage<ExperienceActivity> getAdminActivityList(Page<ExperienceActivity> page, Integer type, String keyword) {
+        LambdaQueryWrapper<ExperienceActivity> wrapper = new LambdaQueryWrapper<>();
+        // 管理员可以看到所有状态的活动，包括已取消的
+        if (type != null) {
+            wrapper.eq(ExperienceActivity::getType, type);
+        }
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            wrapper.and(w -> w.like(ExperienceActivity::getName, keyword)
+                    .or().like(ExperienceActivity::getDescription, keyword));
+        }
+        wrapper.orderByDesc(ExperienceActivity::getCreateTime);
+        return activityMapper.selectPage(page, wrapper);
+    }
+
+    @Override
+    public ExperienceActivity createActivity(Map<String, Object> params) {
+        ExperienceActivity activity = new ExperienceActivity();
+        activity.setName(params.get("name").toString());
+        activity.setDescription(params.get("description") != null ? params.get("description").toString() : null);
+        activity.setImage(params.get("image") != null ? params.get("image").toString() : null);
+        activity.setType(params.get("type") != null ? Integer.valueOf(params.get("type").toString()) : 1);
+        activity.setPrice(params.get("price") != null ? new BigDecimal(params.get("price").toString()) : null);
+        
+        if (params.get("startTime") != null) {
+            activity.setStartTime(LocalDateTime.parse(params.get("startTime").toString().replace(" ", "T")));
+        }
+        if (params.get("endTime") != null) {
+            activity.setEndTime(LocalDateTime.parse(params.get("endTime").toString().replace(" ", "T")));
+        }
+        if (params.get("couponStartTime") != null) {
+            activity.setCouponStartTime(LocalDateTime.parse(params.get("couponStartTime").toString().replace(" ", "T")));
+        }
+        if (params.get("couponEndTime") != null) {
+            activity.setCouponEndTime(LocalDateTime.parse(params.get("couponEndTime").toString().replace(" ", "T")));
+        }
+        
+        activity.setTotalCoupons(params.get("totalCoupons") != null ? Integer.valueOf(params.get("totalCoupons").toString()) : 0);
+        activity.setMaxParticipants(params.get("maxParticipants") != null ? Integer.valueOf(params.get("maxParticipants").toString()) : 0);
+        activity.setStatus(params.get("status") != null ? Integer.valueOf(params.get("status").toString()) : 0);
+        
+        activityMapper.insert(activity);
+        return activity;
+    }
+
+    @Override
+    public ExperienceActivity updateActivity(Map<String, Object> params) {
+        Long id = Long.valueOf(params.get("id").toString());
+        ExperienceActivity activity = activityMapper.selectById(id);
+        if (activity == null) {
+            throw new RuntimeException("活动不存在");
+        }
+
+        if (params.get("name") != null) {
+            activity.setName(params.get("name").toString());
+        }
+        if (params.get("description") != null) {
+            activity.setDescription(params.get("description").toString());
+        }
+        if (params.get("image") != null) {
+            activity.setImage(params.get("image").toString());
+        }
+        if (params.get("type") != null) {
+            activity.setType(Integer.valueOf(params.get("type").toString()));
+        }
+        if (params.get("price") != null) {
+            activity.setPrice(new BigDecimal(params.get("price").toString()));
+        }
+        if (params.get("startTime") != null) {
+            activity.setStartTime(LocalDateTime.parse(params.get("startTime").toString().replace(" ", "T")));
+        }
+        if (params.get("endTime") != null) {
+            activity.setEndTime(LocalDateTime.parse(params.get("endTime").toString().replace(" ", "T")));
+        }
+        if (params.get("couponStartTime") != null) {
+            activity.setCouponStartTime(LocalDateTime.parse(params.get("couponStartTime").toString().replace(" ", "T")));
+        }
+        if (params.get("couponEndTime") != null) {
+            activity.setCouponEndTime(LocalDateTime.parse(params.get("couponEndTime").toString().replace(" ", "T")));
+        }
+        if (params.get("totalCoupons") != null) {
+            activity.setTotalCoupons(Integer.valueOf(params.get("totalCoupons").toString()));
+        }
+        if (params.get("maxParticipants") != null) {
+            activity.setMaxParticipants(Integer.valueOf(params.get("maxParticipants").toString()));
+        }
+        if (params.get("status") != null) {
+            activity.setStatus(Integer.valueOf(params.get("status").toString()));
+        }
+
+        activityMapper.updateById(activity);
+        return activity;
+    }
+
+    @Override
+    public void deleteActivity(Long id) {
+        activityMapper.deleteById(id);
     }
 }
 
