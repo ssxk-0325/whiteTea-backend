@@ -210,10 +210,14 @@ CREATE TABLE `tb_experience_activity` (
   `name` VARCHAR(100) NOT NULL COMMENT '活动名称',
   `description` TEXT COMMENT '活动描述',
   `image` VARCHAR(255) DEFAULT NULL COMMENT '活动图片',
-  `type` TINYINT(1) DEFAULT 1 COMMENT '活动类型：1-制茶体验，2-品茶体验，3-茶园参观，4-文化讲座',
+  `type` TINYINT(1) DEFAULT 1 COMMENT '活动类型：1-茶艺课，2-茶园参观，3-线下品鉴会，4-制茶体验',
   `price` DECIMAL(10,2) DEFAULT NULL COMMENT '价格',
   `start_time` DATETIME DEFAULT NULL COMMENT '活动开始时间',
   `end_time` DATETIME DEFAULT NULL COMMENT '活动结束时间',
+  `coupon_start_time` DATETIME DEFAULT NULL COMMENT '抢券开始时间',
+  `coupon_end_time` DATETIME DEFAULT NULL COMMENT '抢券结束时间',
+  `total_coupons` INT(11) DEFAULT 0 COMMENT '总券数',
+  `issued_coupons` INT(11) DEFAULT 0 COMMENT '已发放券数',
   `max_participants` INT(11) DEFAULT 0 COMMENT '报名人数上限',
   `current_participants` INT(11) DEFAULT 0 COMMENT '已报名人数',
   `status` TINYINT(1) DEFAULT 0 COMMENT '状态：0-未开始，1-进行中，2-已结束，3-已取消',
@@ -223,8 +227,34 @@ CREATE TABLE `tb_experience_activity` (
   PRIMARY KEY (`id`),
   KEY `idx_type` (`type`),
   KEY `idx_status` (`status`),
-  KEY `idx_start_time` (`start_time`)
+  KEY `idx_start_time` (`start_time`),
+  KEY `idx_coupon_start_time` (`coupon_start_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='体验活动表';
+
+-- ============================================
+-- 10. 用户活动券表
+-- ============================================
+DROP TABLE IF EXISTS `tb_user_activity_coupon`;
+CREATE TABLE `tb_user_activity_coupon` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `user_id` BIGINT(20) NOT NULL COMMENT '用户ID',
+  `activity_id` BIGINT(20) NOT NULL COMMENT '活动ID',
+  `coupon_code` VARCHAR(50) NOT NULL COMMENT '券码（唯一）',
+  `coupon_name` VARCHAR(100) NOT NULL COMMENT '券名称',
+  `coupon_type` TINYINT(1) DEFAULT 1 COMMENT '券类型：1-茶艺课，2-茶园参观，3-线下品鉴会，4-制茶体验',
+  `status` TINYINT(1) DEFAULT 0 COMMENT '状态：0-未使用，1-已使用，2-已过期',
+  `use_time` DATETIME DEFAULT NULL COMMENT '使用时间',
+  `expire_time` DATETIME DEFAULT NULL COMMENT '过期时间',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_coupon_code` (`coupon_code`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_activity_id` (`activity_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_expire_time` (`expire_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户活动券表';
 
 -- ============================================
 -- 10. 社区帖子表

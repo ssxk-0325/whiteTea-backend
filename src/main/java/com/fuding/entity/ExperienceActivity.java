@@ -36,7 +36,7 @@ public class ExperienceActivity extends BaseEntity {
     private String image;
 
     /**
-     * 活动类型：1-制茶体验，2-品茶体验，3-茶园参观，4-文化讲座
+     * 活动类型：1-茶艺课，2-茶园参观，3-线下品鉴会，4-制茶体验
      */
     @TableField("type")
     private Integer type = 1;
@@ -70,6 +70,30 @@ public class ExperienceActivity extends BaseEntity {
      */
     @TableField("current_participants")
     private Integer currentParticipants = 0;
+
+    /**
+     * 抢券开始时间
+     */
+    @TableField("coupon_start_time")
+    private LocalDateTime couponStartTime;
+
+    /**
+     * 抢券结束时间
+     */
+    @TableField("coupon_end_time")
+    private LocalDateTime couponEndTime;
+
+    /**
+     * 总券数
+     */
+    @TableField("total_coupons")
+    private Integer totalCoupons = 0;
+
+    /**
+     * 已发放券数
+     */
+    @TableField("issued_coupons")
+    private Integer issuedCoupons = 0;
 
     /**
      * 状态：0-未开始，1-进行中，2-已结束，3-已取消
