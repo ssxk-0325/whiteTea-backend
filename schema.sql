@@ -353,6 +353,51 @@ CREATE TABLE `tb_community_post_favorite` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='社区帖子收藏表';
 
 -- ============================================
+-- 15. 趣味问答问题表
+-- ============================================
+DROP TABLE IF EXISTS `tb_quiz_question`;
+CREATE TABLE `tb_quiz_question` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `question` TEXT NOT NULL COMMENT '问题内容',
+  `options` TEXT NOT NULL COMMENT '选项（JSON格式，如：["选项A","选项B","选项C","选项D"]）',
+  `correct_answer` INT(11) NOT NULL COMMENT '正确答案索引（0-3）',
+  `explanation` TEXT COMMENT '答案解析',
+  `category` TINYINT(1) DEFAULT 1 COMMENT '分类：1-互动，2-文化，3-活动',
+  `difficulty` TINYINT(1) DEFAULT 1 COMMENT '难度：1-简单，2-中等，3-困难',
+  `image` VARCHAR(255) DEFAULT NULL COMMENT '问题图片',
+  `view_count` INT(11) DEFAULT 0 COMMENT '答题次数',
+  `correct_count` INT(11) DEFAULT 0 COMMENT '答对次数',
+  `status` TINYINT(1) DEFAULT 1 COMMENT '状态：0-草稿，1-发布',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_category` (`category`),
+  KEY `idx_difficulty` (`difficulty`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='趣味问答问题表';
+
+-- ============================================
+-- 16. 用户答题记录表
+-- ============================================
+DROP TABLE IF EXISTS `tb_quiz_answer`;
+CREATE TABLE `tb_quiz_answer` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `user_id` BIGINT(20) NOT NULL COMMENT '用户ID',
+  `question_id` BIGINT(20) NOT NULL COMMENT '问题ID',
+  `user_answer` INT(11) NOT NULL COMMENT '用户答案索引（0-3）',
+  `is_correct` TINYINT(1) DEFAULT 0 COMMENT '是否答对：0-错误，1-正确',
+  `create_time` DATETIME DEFAULT NULL COMMENT '答题时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_question_id` (`question_id`),
+  KEY `idx_create_time` (`create_time`),
+  UNIQUE KEY `uk_user_question` (`user_id`, `question_id`, `deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户答题记录表';
+
+-- ============================================
 -- 初始化数据
 -- ============================================
 
