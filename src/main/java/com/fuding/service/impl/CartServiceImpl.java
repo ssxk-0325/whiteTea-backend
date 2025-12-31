@@ -39,17 +39,27 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
             throw new RuntimeException("库存不足");
         }
 
-        // 检查购物车中是否已有该商品
+        // 先尝试恢复逻辑删除的记录
+        int restored = cartMapper.restoreDeletedCart(userId, productId);
+        
+        // 检查购物车中是否已有该商品（包括刚恢复的）
         LambdaQueryWrapper<Cart> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Cart::getUserId, userId);
         wrapper.eq(Cart::getProductId, productId);
         Cart existingCart = cartMapper.selectOne(wrapper);
         
         if (existingCart != null) {
-            existingCart.setQuantity(existingCart.getQuantity() + quantity);
+            // 如果恢复了记录，数量从0开始；否则累加
+            if (restored > 0) {
+                existingCart.setQuantity(quantity);
+            } else {
+                existingCart.setQuantity(existingCart.getQuantity() + quantity);
+            }
+            existingCart.setSelected(1); // 恢复时设置为选中
             cartMapper.updateById(existingCart);
             return existingCart;
         } else {
+            // 不存在则插入新记录
             Cart cart = new Cart();
             cart.setUserId(userId);
             cart.setProductId(productId);
