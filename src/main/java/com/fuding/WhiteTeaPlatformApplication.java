@@ -3,6 +3,7 @@ package com.fuding;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * 福鼎白茶服务平台主启动类
@@ -12,6 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication
 @MapperScan("com.fuding.mapper")
+@EnableScheduling
 public class WhiteTeaPlatformApplication {
 
     public static void main(String[] args) {

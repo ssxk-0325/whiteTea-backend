@@ -212,5 +212,62 @@ public class OrderController {
             return Result.error(e.getMessage());
         }
     }
+
+    /**
+     * 管理后台：获取所有订单列表
+     */
+    @GetMapping("/admin/list")
+    public Result<List<Map<String, Object>>> getAllOrders(
+            @RequestParam(required = false) Integer status) {
+        try {
+            List<Order> orders = orderService.getAllOrders(status);
+            
+            // 为每个订单添加订单项
+            List<Map<String, Object>> result = orders.stream().map(order -> {
+                Map<String, Object> orderMap = new HashMap<>();
+                orderMap.put("id", order.getId());
+                orderMap.put("orderNo", order.getOrderNo());
+                orderMap.put("userId", order.getUserId());
+                orderMap.put("totalAmount", order.getTotalAmount());
+                orderMap.put("payAmount", order.getPayAmount());
+                orderMap.put("status", order.getStatus());
+                orderMap.put("payType", order.getPayType());
+                orderMap.put("receiverName", order.getReceiverName());
+                orderMap.put("receiverPhone", order.getReceiverPhone());
+                orderMap.put("receiverAddress", order.getReceiverAddress());
+                orderMap.put("createTime", order.getCreateTime());
+                orderMap.put("payTime", order.getPayTime());
+                orderMap.put("shipTime", order.getShipTime());
+                orderMap.put("completeTime", order.getCompleteTime());
+                orderMap.put("remark", order.getRemark());
+
+                // 获取订单项
+                com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<OrderItem> wrapper = 
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+                wrapper.eq(OrderItem::getOrderId, order.getId());
+                List<OrderItem> items = orderItemMapper.selectList(wrapper);
+                orderMap.put("items", items);
+
+                return orderMap;
+            }).collect(Collectors.toList());
+
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理后台：发货
+     */
+    @PostMapping("/admin/{id}/ship")
+    public Result<Void> adminShipOrder(@PathVariable Long id) {
+        try {
+            orderService.shipOrder(id);
+            return Result.success("发货成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }
 

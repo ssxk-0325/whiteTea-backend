@@ -42,5 +42,10 @@ public interface OrderService {
      * 发货
      */
     void shipOrder(Long orderId);
+
+    /**
+     * 获取所有订单列表（管理后台使用）
+     */
+    List<Order> getAllOrders(Integer status);
 }
 

@@ -187,6 +187,16 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         orderMapper.updateById(order);
     }
 
+    @Override
+    public List<Order> getAllOrders(Integer status) {
+        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
+        if (status != null) {
+            wrapper.eq(Order::getStatus, status);
+        }
+        wrapper.orderByDesc(Order::getCreateTime);
+        return orderMapper.selectList(wrapper);
+    }
+
     /**
      * 生成订单号
      */
