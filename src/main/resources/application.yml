@@ -51,6 +51,14 @@ mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.fuding.entity
 
+# AI API配置
+ai:
+  api:
+    url: # 大模型API地址，例如：https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-bot-turbo
+    key: # API密钥
+    type: wenxin # wenxin(文心一言), tongyi(通义千问), openai(ChatGPT)
+    model: # 模型名称，例如：ernie-bot-turbo, gpt-3.5-turbo
+
 # 日志配置
 logging:
   level:

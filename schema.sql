@@ -419,3 +419,43 @@ INSERT INTO `tb_category` (`name`, `description`, `parent_id`, `sort_order`, `st
 ('寿眉', '寿眉是白茶中的常见品种', 0, 3, 1, NOW(), NOW()),
 ('贡眉', '贡眉是白茶中的传统品种', 0, 4, 1, NOW(), NOW());
 
+-- ============================================
+-- 17. 客服会话表
+-- ============================================
+DROP TABLE IF EXISTS `tb_customer_service_session`;
+CREATE TABLE `tb_customer_service_session` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `session_no` VARCHAR(50) NOT NULL COMMENT '会话编号',
+  `user_id` BIGINT(20) NOT NULL COMMENT '用户ID',
+  `status` TINYINT(1) DEFAULT 0 COMMENT '会话状态：0-进行中，1-已结束，2-已转人工',
+  `last_message_time` DATETIME DEFAULT NULL COMMENT '最后一条消息时间',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_session_no` (`session_no`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_last_message_time` (`last_message_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='客服会话表';
+
+-- ============================================
+-- 18. 客服消息表
+-- ============================================
+DROP TABLE IF EXISTS `tb_customer_service_message`;
+CREATE TABLE `tb_customer_service_message` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `session_id` BIGINT(20) NOT NULL COMMENT '会话ID',
+  `sender_type` TINYINT(1) NOT NULL COMMENT '发送者类型：0-用户，1-客服（AI），2-人工客服',
+  `content` TEXT NOT NULL COMMENT '消息内容',
+  `message_type` TINYINT(1) DEFAULT 0 COMMENT '消息类型：0-文本，1-图片，2-文件',
+  `is_read` TINYINT(1) DEFAULT 0 COMMENT '是否已读：0-未读，1-已读',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_session_id` (`session_id`),
+  KEY `idx_sender_type` (`sender_type`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='客服消息表';
+
