@@ -31,6 +31,9 @@ public class ChatServiceImpl implements ChatService {
     @Autowired
     private AIService aiService;
 
+    @Autowired
+    private com.fuding.service.TagService tagService;
+
     @Override
     @Transactional
     public CustomerServiceSession createOrGetSession(Long userId) {
@@ -90,6 +93,12 @@ public class ChatServiceImpl implements ChatService {
     public CustomerServiceMessage processUserMessage(Long sessionId, String userMessage) {
         // 1. 保存用户消息
         sendMessage(sessionId, userMessage, 0); // 0-用户
+
+        // 1.5. 记录问题（用于Tag统计）
+        CustomerServiceSession session = sessionMapper.selectById(sessionId);
+        if (session != null) {
+            tagService.recordQuestion(userMessage, session.getUserId());
+        }
 
         // 2. 获取对话历史（最近10条）
         List<CustomerServiceMessage> recentMessages = getMessages(sessionId);

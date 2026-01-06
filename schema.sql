@@ -459,3 +459,61 @@ CREATE TABLE `tb_customer_service_message` (
   KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='客服消息表';
 
+-- ============================================
+-- 19. 客服问题统计表（用于生成Tag）
+-- ============================================
+DROP TABLE IF EXISTS `tb_customer_service_question`;
+CREATE TABLE `tb_customer_service_question` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `question` TEXT NOT NULL COMMENT '问题内容',
+  `question_hash` VARCHAR(64) NOT NULL COMMENT '问题哈希值（用于去重）',
+  `ask_count` INT(11) DEFAULT 1 COMMENT '提问次数',
+  `user_count` INT(11) DEFAULT 1 COMMENT '提问用户数',
+  `last_ask_time` DATETIME DEFAULT NULL COMMENT '最后提问时间',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_question_hash` (`question_hash`),
+  KEY `idx_ask_count` (`ask_count`),
+  KEY `idx_last_ask_time` (`last_ask_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='客服问题统计表';
+
+-- ============================================
+-- 20. 客服Tag表
+-- ============================================
+DROP TABLE IF EXISTS `tb_customer_service_tag`;
+CREATE TABLE `tb_customer_service_tag` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `tag_name` VARCHAR(100) NOT NULL COMMENT 'Tag名称',
+  `tag_description` VARCHAR(255) DEFAULT NULL COMMENT 'Tag描述',
+  `answer` TEXT COMMENT 'Tag对应的答案',
+  `hit_count` INT(11) DEFAULT 0 COMMENT '点击次数',
+  `question_count` INT(11) DEFAULT 0 COMMENT '关联的问题数量',
+  `score` DECIMAL(10,2) DEFAULT 0.00 COMMENT 'Tag得分（用于排序）',
+  `sort_order` INT(11) DEFAULT 0 COMMENT '排序',
+  `status` TINYINT(1) DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_score` (`score`),
+  KEY `idx_status` (`status`),
+  KEY `idx_sort_order` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='客服Tag表';
+
+-- ============================================
+-- 21. Tag与问题关联表
+-- ============================================
+DROP TABLE IF EXISTS `tb_customer_service_tag_question`;
+CREATE TABLE `tb_customer_service_tag_question` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `tag_id` BIGINT(20) NOT NULL COMMENT 'Tag ID',
+  `question_id` BIGINT(20) NOT NULL COMMENT '问题ID',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tag_question` (`tag_id`, `question_id`),
+  KEY `idx_tag_id` (`tag_id`),
+  KEY `idx_question_id` (`question_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tag与问题关联表';
+
