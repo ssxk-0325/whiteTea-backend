@@ -6,17 +6,20 @@ server:
 spring:
   application:
     name: white-tea-platform
-  
+  # 新增：启用ANSI彩色输出（关键配置1）
+  output:
+    ansi:
+      enabled: DETECT # 可选值：ALWAYS(强制启用)、DETECT(自动检测)、NEVER(禁用)
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/white_tea_db?useSSL=true&requireSSL=true
     username: root
     password: 123456
-  
+
   redis:
     host: localhost
     port: 6379
-    password: 
+    password:
     database: 0
     timeout: 5000ms
     lettuce:
@@ -41,7 +44,8 @@ file:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 修改：注释/删除原有的标准输出日志实现，改用Spring Boot日志框架（关键配置2）
+    # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       id-type: auto
@@ -66,5 +70,5 @@ logging:
     com.fuding: DEBUG
     com.fuding.mapper: DEBUG
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
-
+    # 修改：添加彩色占位符%clr()（关键配置3），实现不同日志级别不同颜色
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss}){blue} %clr([%thread]){green} %clr(%-5level){red} %clr(%logger{50}){yellow} - %clr(%msg%n){white}"
