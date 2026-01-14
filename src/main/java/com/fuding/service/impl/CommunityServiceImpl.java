@@ -461,6 +461,54 @@ public class CommunityServiceImpl extends ServiceImpl<CommunityPostMapper, Commu
     }
 
     @Override
+    public IPage<Map<String, Object>> getUserLikedPosts(Page<CommunityPost> page, Long userId) {
+        // 先查询点赞的帖子ID
+        LambdaQueryWrapper<CommunityPostLike> likeWrapper = new LambdaQueryWrapper<>();
+        likeWrapper.eq(CommunityPostLike::getUserId, userId);
+        List<CommunityPostLike> likes = likeMapper.selectList(likeWrapper);
+
+        if (likes.isEmpty()) {
+            return new Page<>(page.getCurrent(), page.getSize(), 0);
+        }
+
+        List<Long> postIds = likes.stream().map(CommunityPostLike::getPostId).collect(Collectors.toList());
+
+        // 查询帖子
+        LambdaQueryWrapper<CommunityPost> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(CommunityPost::getId, postIds);
+        wrapper.eq(CommunityPost::getStatus, 1);
+        wrapper.orderByDesc(CommunityPost::getCreateTime);
+
+        IPage<CommunityPost> postPage = postMapper.selectPage(page, wrapper);
+
+        // 转换为包含用户信息的Map
+        return postPage.convert(post -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", post.getId());
+            map.put("title", post.getTitle());
+            map.put("content", post.getContent());
+            map.put("images", post.getImages());
+            map.put("type", post.getType());
+            map.put("viewCount", post.getViewCount());
+            map.put("likeCount", post.getLikeCount());
+            map.put("commentCount", post.getCommentCount());
+            map.put("createTime", post.getCreateTime());
+
+            User user = userMapper.selectById(post.getUserId());
+            if (user != null) {
+                Map<String, Object> userInfo = new HashMap<>();
+                userInfo.put("id", user.getId());
+                userInfo.put("username", user.getUsername());
+                userInfo.put("nickname", user.getNickname());
+                userInfo.put("avatar", user.getAvatar());
+                map.put("user", userInfo);
+            }
+
+            return map;
+        });
+    }
+
+    @Override
     public IPage<Map<String, Object>> getUserFavoritePosts(Page<CommunityPost> page, Long userId) {
         // 先查询收藏的帖子ID
         LambdaQueryWrapper<CommunityPostFavorite> favoriteWrapper = new LambdaQueryWrapper<>();

@@ -301,6 +301,29 @@ public class CommunityController {
     }
 
     /**
+     * 获取用户点赞的帖子列表
+     */
+    @GetMapping("/post/likes")
+    public Result<IPage<Map<String, Object>>> getUserLikedPosts(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+
+            Page<CommunityPost> postPage = new Page<>(page, size);
+            IPage<Map<String, Object>> result = communityService.getUserLikedPosts(postPage, userId);
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
      * 获取用户收藏的帖子列表
      */
     @GetMapping("/post/favorites")

@@ -75,5 +75,11 @@ public class User extends BaseEntity {
      */
     @TableField("status")
     private Integer status = 1;
+
+    /**
+     * 个人简介
+     */
+    @TableField("bio")
+    private String bio;
 }
 

@@ -83,6 +83,11 @@ public interface CommunityService {
     Map<String, Boolean> checkUserActions(Long postId, Long userId);
 
     /**
+     * 获取用户点赞的帖子列表
+     */
+    IPage<Map<String, Object>> getUserLikedPosts(Page<CommunityPost> page, Long userId);
+
+    /**
      * 获取用户收藏的帖子列表
      */
     IPage<Map<String, Object>> getUserFavoritePosts(Page<CommunityPost> page, Long userId);
