@@ -1,5 +1,7 @@
 package com.fuding.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fuding.entity.User;
 
 /**
@@ -36,5 +38,10 @@ public interface UserService {
      * 修改密码
      */
     void changePassword(Long userId, String oldPassword, String newPassword);
+
+    /**
+     * 获取用户列表（管理员接口）
+     */
+    IPage<User> getUserList(Page<User> page, String keyword);
 }
 

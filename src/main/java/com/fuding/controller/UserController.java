@@ -1,5 +1,7 @@
 package com.fuding.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fuding.common.Result;
 import com.fuding.entity.User;
 import com.fuding.service.UserService;
@@ -138,6 +140,31 @@ public class UserController {
 
             userService.changePassword(userId, oldPassword, newPassword);
             return Result.success("密码修改成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员获取用户列表
+     */
+    @GetMapping("/admin/list")
+    public Result<IPage<User>> getUserList(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String keyword,
+            HttpServletRequest request) {
+        try {
+            // 验证token有效性
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            jwtUtil.getUserIdFromToken(token);
+
+            Page<User> userPage = new Page<>(page, size);
+            IPage<User> result = userService.getUserList(userPage, keyword);
+            return Result.success(result);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

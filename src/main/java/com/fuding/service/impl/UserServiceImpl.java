@@ -1,6 +1,8 @@
 package com.fuding.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fuding.entity.User;
 import com.fuding.mapper.UserMapper;
@@ -10,6 +12,7 @@ import com.fuding.util.Md5Util;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 /**
  * 用户服务实现类
@@ -136,5 +139,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 更新密码
         user.setPassword(Md5Util.encrypt(newPassword));
         userMapper.updateById(user);
+    }
+
+    @Override
+    public IPage<User> getUserList(Page<User> page, String keyword) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        
+        // 如果有关键词，搜索用户名、昵称、手机号或邮箱
+        if (StringUtils.hasText(keyword)) {
+            wrapper.and(w -> w
+                .like(User::getUsername, keyword)
+                .or()
+                .like(User::getNickname, keyword)
+                .or()
+                .like(User::getPhone, keyword)
+                .or()
+                .like(User::getEmail, keyword)
+            );
+        }
+        
+        // 按创建时间倒序排列
+        wrapper.orderByDesc(User::getCreateTime);
+        
+        // 不返回密码字段
+        IPage<User> result = userMapper.selectPage(page, wrapper);
+        result.getRecords().forEach(user -> user.setPassword(null));
+        
+        return result;
     }
 }
