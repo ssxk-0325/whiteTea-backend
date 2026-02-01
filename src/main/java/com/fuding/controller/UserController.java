@@ -85,6 +85,24 @@ public class UserController {
     }
 
     /**
+     * 根据用户ID获取用户信息（公开接口，用于查看其他用户信息）
+     */
+    @GetMapping("/info/{userId}")
+    public Result<User> getUserById(@PathVariable Long userId) {
+        try {
+            User user = userService.findById(userId);
+            if (user == null) {
+                return Result.error("用户不存在");
+            }
+            // 不返回密码
+            user.setPassword(null);
+            return Result.success(user);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
      * 更新用户信息
      */
     @PutMapping("/update")
