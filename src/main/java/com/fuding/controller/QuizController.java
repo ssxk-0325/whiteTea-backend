@@ -40,7 +40,8 @@ public class QuizController {
             @RequestParam(required = false) String keyword,
             HttpServletRequest request) {
         try {
-            Page<QuizQuestion> questionPage = new Page<>(page, size);
+            // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
+            Page<QuizQuestion> questionPage = new Page<>(page + 1, size);
             Long userId = null;
             // 尝试获取用户ID（如果已登录）
             try {
@@ -155,7 +156,8 @@ public class QuizController {
             }
             jwtUtil.getUserIdFromToken(token); // 验证token有效性
 
-            Page<QuizQuestion> questionPage = new Page<>(page, size);
+            // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
+            Page<QuizQuestion> questionPage = new Page<>(page + 1, size);
             IPage<QuizQuestion> result = quizService.getAdminQuestionList(questionPage, category, difficulty, keyword);
             return Result.success(result);
         } catch (Exception e) {

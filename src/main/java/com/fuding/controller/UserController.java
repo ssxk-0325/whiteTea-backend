@@ -162,7 +162,8 @@ public class UserController {
             }
             jwtUtil.getUserIdFromToken(token);
 
-            Page<User> userPage = new Page<>(page, size);
+            // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
+            Page<User> userPage = new Page<>(page + 1, size);
             IPage<User> result = userService.getUserList(userPage, keyword);
             return Result.success(result);
         } catch (Exception e) {

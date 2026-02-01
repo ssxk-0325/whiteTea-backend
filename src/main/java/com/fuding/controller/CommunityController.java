@@ -62,7 +62,8 @@ public class CommunityController {
             @RequestParam(required = false) Integer type,
             @RequestParam(required = false) String keyword) {
         try {
-            Page<CommunityPost> postPage = new Page<>(page, size);
+            // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
+            Page<CommunityPost> postPage = new Page<>(page + 1, size);
             IPage<Map<String, Object>> result = communityService.getPostList(postPage, type, keyword);
             return Result.success(result);
         } catch (Exception e) {
@@ -315,7 +316,8 @@ public class CommunityController {
             }
             Long userId = jwtUtil.getUserIdFromToken(token);
 
-            Page<CommunityPost> postPage = new Page<>(page, size);
+            // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
+            Page<CommunityPost> postPage = new Page<>(page + 1, size);
             IPage<Map<String, Object>> result = communityService.getUserLikedPosts(postPage, userId);
             return Result.success(result);
         } catch (Exception e) {
@@ -338,7 +340,8 @@ public class CommunityController {
             }
             Long userId = jwtUtil.getUserIdFromToken(token);
 
-            Page<CommunityPost> postPage = new Page<>(page, size);
+            // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
+            Page<CommunityPost> postPage = new Page<>(page + 1, size);
             IPage<Map<String, Object>> result = communityService.getUserFavoritePosts(postPage, userId);
             return Result.success(result);
         } catch (Exception e) {

@@ -38,7 +38,8 @@ public class CultureController {
             @RequestParam(required = false) Integer type,
             @RequestParam(required = false) String keyword) {
         try {
-            Page<CultureContent> contentPage = new Page<>(page, size);
+            // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
+            Page<CultureContent> contentPage = new Page<>(page + 1, size);
             IPage<CultureContent> result = cultureService.getContentList(contentPage, contentType, type, keyword);
             return Result.success(result);
         } catch (Exception e) {
@@ -207,7 +208,8 @@ public class CultureController {
             }
             Long userId = jwtUtil.getUserIdFromToken(token);
 
-            Page<CultureContent> contentPage = new Page<>(page, size);
+            // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
+            Page<CultureContent> contentPage = new Page<>(page + 1, size);
             IPage<CultureContent> result = cultureService.getAdminContentList(contentPage, contentType, type, keyword);
             return Result.success(result);
         } catch (Exception e) {

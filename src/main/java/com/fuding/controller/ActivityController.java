@@ -39,7 +39,8 @@ public class ActivityController {
             @RequestParam(required = false) Integer type,
             @RequestParam(required = false) String keyword) {
         try {
-            Page<ExperienceActivity> activityPage = new Page<>(page, size);
+            // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
+            Page<ExperienceActivity> activityPage = new Page<>(page + 1, size);
             IPage<ExperienceActivity> result = activityService.getActivityList(activityPage, type, keyword);
             return Result.success(result);
         } catch (Exception e) {
@@ -140,7 +141,8 @@ public class ActivityController {
             }
             jwtUtil.getUserIdFromToken(token); // 验证token有效性
 
-            Page<ExperienceActivity> activityPage = new Page<>(page, size);
+            // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
+            Page<ExperienceActivity> activityPage = new Page<>(page + 1, size);
             IPage<ExperienceActivity> result = activityService.getAdminActivityList(activityPage, type, keyword);
             return Result.success(result);
         } catch (Exception e) {
