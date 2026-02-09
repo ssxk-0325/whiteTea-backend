@@ -258,6 +258,30 @@ public class OrderController {
     }
 
     /**
+     * 管理后台：获取订单详情
+     */
+    @GetMapping("/admin/{id}")
+    public Result<Map<String, Object>> adminGetOrderDetail(@PathVariable Long id) {
+        try {
+            Order order = orderService.getOrderById(id);
+            
+            // 获取订单项
+            com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<OrderItem> wrapper = 
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+            wrapper.eq(OrderItem::getOrderId, id);
+            List<OrderItem> items = orderItemMapper.selectList(wrapper);
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("order", order);
+            data.put("items", items);
+
+            return Result.success(data);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
      * 管理后台：发货
      */
     @PostMapping("/admin/{id}/ship")
