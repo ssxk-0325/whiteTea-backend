@@ -170,5 +170,25 @@ public class UserController {
             return Result.error(e.getMessage());
         }
     }
+
+    /**
+     * 管理员更新用户信息
+     */
+    @PutMapping("/admin/update")
+    public Result<User> adminUpdateUser(@RequestBody User user, HttpServletRequest request) {
+        try {
+            // 验证token有效性
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            jwtUtil.getUserIdFromToken(token);
+
+            User updatedUser = userService.adminUpdateUser(user);
+            return Result.success("更新成功", updatedUser);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }
 

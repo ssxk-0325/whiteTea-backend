@@ -167,4 +167,78 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         
         return result;
     }
+
+    @Override
+    public User adminUpdateUser(User user) {
+        if (user.getId() == null) {
+            throw new RuntimeException("用户ID不能为空");
+        }
+        
+        User existingUser = findById(user.getId());
+        
+        // 更新昵称
+        if (user.getNickname() != null) {
+            existingUser.setNickname(user.getNickname());
+        }
+        
+        // 更新手机号（需要检查是否已被其他用户使用）
+        if (user.getPhone() != null && !user.getPhone().isEmpty()) {
+            if (!user.getPhone().equals(existingUser.getPhone())) {
+                LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+                wrapper.eq(User::getPhone, user.getPhone());
+                wrapper.ne(User::getId, user.getId());
+                if (userMapper.selectCount(wrapper) > 0) {
+                    throw new RuntimeException("手机号已被其他用户使用");
+                }
+            }
+            existingUser.setPhone(user.getPhone());
+        }
+        
+        // 更新邮箱（需要检查是否已被其他用户使用）
+        if (user.getEmail() != null && !user.getEmail().isEmpty()) {
+            if (!user.getEmail().equals(existingUser.getEmail())) {
+                LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+                wrapper.eq(User::getEmail, user.getEmail());
+                wrapper.ne(User::getId, user.getId());
+                if (userMapper.selectCount(wrapper) > 0) {
+                    throw new RuntimeException("邮箱已被其他用户使用");
+                }
+            }
+            existingUser.setEmail(user.getEmail());
+        }
+        
+        // 更新头像
+        if (user.getAvatar() != null) {
+            existingUser.setAvatar(user.getAvatar());
+        }
+        
+        // 更新性别
+        if (user.getGender() != null) {
+            existingUser.setGender(user.getGender());
+        }
+        
+        // 更新生日
+        if (user.getBirthday() != null) {
+            existingUser.setBirthday(user.getBirthday());
+        }
+        
+        // 更新用户类型（管理员可以修改）
+        if (user.getUserType() != null) {
+            existingUser.setUserType(user.getUserType());
+        }
+        
+        // 更新状态（管理员可以修改）
+        if (user.getStatus() != null) {
+            existingUser.setStatus(user.getStatus());
+        }
+        
+        // 更新个人简介
+        if (user.getBio() != null) {
+            existingUser.setBio(user.getBio());
+        }
+        
+        userMapper.updateById(existingUser);
+        existingUser.setPassword(null);
+        return existingUser;
+    }
 }

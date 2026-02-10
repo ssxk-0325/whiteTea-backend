@@ -43,5 +43,10 @@ public interface UserService {
      * 获取用户列表（管理员接口）
      */
     IPage<User> getUserList(Page<User> page, String keyword);
+
+    /**
+     * 管理员更新用户信息
+     */
+    User adminUpdateUser(User user);
 }
 
