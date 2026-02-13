@@ -81,5 +81,11 @@ public class User extends BaseEntity {
      */
     @TableField("bio")
     private String bio;
+
+    /**
+     * 积分
+     */
+    @TableField("points")
+    private Integer points = 0;
 }
 

@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fuding.entity.QuizAnswer;
 import com.fuding.entity.QuizQuestion;
+import com.fuding.entity.User;
 import com.fuding.mapper.QuizAnswerMapper;
 import com.fuding.mapper.QuizQuestionMapper;
+import com.fuding.mapper.UserMapper;
 import com.fuding.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,9 @@ public class QuizServiceImpl extends ServiceImpl<QuizQuestionMapper, QuizQuestio
 
     @Autowired
     private QuizAnswerMapper answerMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     public IPage<QuizQuestion> getQuestionList(Page<QuizQuestion> page, Integer category, Integer difficulty, String keyword, Long userId) {
@@ -149,6 +154,25 @@ public class QuizServiceImpl extends ServiceImpl<QuizQuestionMapper, QuizQuestio
             // 只有新答对或恢复后第一次答对才增加
             question.setCorrectCount(question.getCorrectCount() + 1);
             questionMapper.updateById(question);
+
+            // 增加用户积分（根据难度：1-简单5分，2-中等10分，3-困难15分）
+            User user = userMapper.selectById(userId);
+            if (user != null) {
+                int pointsToAdd = 0;
+                if (question.getDifficulty() == 1) {
+                    pointsToAdd = 5; // 简单
+                } else if (question.getDifficulty() == 2) {
+                    pointsToAdd = 10; // 中等
+                } else if (question.getDifficulty() == 3) {
+                    pointsToAdd = 15; // 困难
+                }
+
+                if (pointsToAdd > 0) {
+                    int currentPoints = user.getPoints() != null ? user.getPoints() : 0;
+                    user.setPoints(currentPoints + pointsToAdd);
+                    userMapper.updateById(user);
+                }
+            }
         }
 
         return answer;

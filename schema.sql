@@ -25,6 +25,7 @@ CREATE TABLE `tb_user` (
   `bio` VARCHAR(500) DEFAULT NULL COMMENT '个人简介',
   `gender` TINYINT(1) DEFAULT 0 COMMENT '性别：0-未知，1-男，2-女',
   `birthday` DATE DEFAULT NULL COMMENT '生日',
+  `points` INT(11) DEFAULT 0 COMMENT '积分',
   `user_type` TINYINT(1) DEFAULT 0 COMMENT '用户类型：0-普通用户，1-管理员',
   `status` TINYINT(1) DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
   `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
@@ -583,4 +584,51 @@ INSERT INTO `tb_store` (`name`, `description`, `image`, `province`, `city`, `dis
 ('茶友汇（新区店）', '新区首家分店，现代化装修风格', NULL, '福建省', '宁德市', '福鼎市', '新区商业中心288号', 120.227778, 27.333333, '0593-1234579', '09:00-22:00', 1, NOW(), NOW()),
 ('福鼎老茶行', '百年老字号，传统工艺，品质传承', NULL, '福建省', '宁德市', '福鼎市', '老城区文化路58号', 120.211111, 27.319444, '0593-1234580', '08:00-19:30', 1, NOW(), NOW()),
 ('茶艺空间（CBD店）', '商务区核心位置，适合商务洽谈', NULL, '福建省', '宁德市', '福鼎市', 'CBD中央商务区188号', 120.223611, 27.332222, '0593-1234581', '09:00-21:30', 1, NOW(), NOW());
+
+-- ============================================
+-- 18. 奖品表
+-- ============================================
+DROP TABLE IF EXISTS `tb_reward`;
+CREATE TABLE `tb_reward` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `name` VARCHAR(100) NOT NULL COMMENT '奖品名称',
+  `description` TEXT COMMENT '奖品描述',
+  `image` VARCHAR(255) DEFAULT NULL COMMENT '奖品图片',
+  `points_required` INT(11) NOT NULL COMMENT '所需积分',
+  `stock` INT(11) DEFAULT 0 COMMENT '库存数量',
+  `total_exchanged` INT(11) DEFAULT 0 COMMENT '已兑换数量',
+  `type` TINYINT(1) DEFAULT 1 COMMENT '奖品类型：1-实物奖品，2-优惠券，3-虚拟奖品',
+  `status` TINYINT(1) DEFAULT 1 COMMENT '状态：0-下架，1-上架',
+  `sort_order` INT(11) DEFAULT 0 COMMENT '排序',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_points_required` (`points_required`),
+  KEY `idx_type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='奖品表';
+
+-- ============================================
+-- 19. 积分兑换记录表
+-- ============================================
+DROP TABLE IF EXISTS `tb_reward_exchange`;
+CREATE TABLE `tb_reward_exchange` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `user_id` BIGINT(20) NOT NULL COMMENT '用户ID',
+  `reward_id` BIGINT(20) NOT NULL COMMENT '奖品ID',
+  `reward_name` VARCHAR(100) NOT NULL COMMENT '奖品名称（冗余字段，便于查询）',
+  `points_used` INT(11) NOT NULL COMMENT '使用的积分',
+  `status` TINYINT(1) DEFAULT 0 COMMENT '状态：0-待处理，1-已发放，2-已取消',
+  `exchange_code` VARCHAR(50) DEFAULT NULL COMMENT '兑换码（用于虚拟奖品）',
+  `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',
+  `create_time` DATETIME DEFAULT NULL COMMENT '兑换时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_reward_id` (`reward_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='积分兑换记录表';
 
