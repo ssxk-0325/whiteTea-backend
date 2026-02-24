@@ -206,5 +206,29 @@ public class ActivityController {
             return Result.error(e.getMessage());
         }
     }
+
+    /**
+     * 管理员核销券
+     */
+    @PostMapping("/admin/verify-coupon")
+    public Result<Void> adminVerifyCoupon(@RequestBody Map<String, String> params, HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            jwtUtil.getUserIdFromToken(token); // 验证token有效性
+
+            String couponCode = params.get("couponCode");
+            if (couponCode == null || couponCode.trim().isEmpty()) {
+                return Result.error("券码不能为空");
+            }
+
+            activityService.verifyCoupon(couponCode.trim());
+            return Result.success("核销成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }
 
