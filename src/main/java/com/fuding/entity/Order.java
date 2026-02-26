@@ -60,6 +60,18 @@ public class Order extends BaseEntity {
     private String receiverAddress;
 
     /**
+     * 配送方式：1-线上配送，2-线下自提
+     */
+    @TableField("delivery_type")
+    private Integer deliveryType = 1;
+
+    /**
+     * 自提门店ID（仅自提时有值）
+     */
+    @TableField("store_id")
+    private Long storeId;
+
+    /**
      * 订单状态：0-待付款，1-待发货，2-待收货，3-已完成，4-已取消，5-退款中，6-已退款
      */
     @TableField("status")

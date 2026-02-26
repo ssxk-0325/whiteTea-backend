@@ -118,6 +118,8 @@ CREATE TABLE `tb_order` (
   `receiver_name` VARCHAR(50) NOT NULL COMMENT '收货人姓名',
   `receiver_phone` VARCHAR(20) NOT NULL COMMENT '收货人电话',
   `receiver_address` VARCHAR(255) NOT NULL COMMENT '收货地址',
+  `delivery_type` TINYINT(1) DEFAULT 1 COMMENT '配送方式：1-线上配送，2-线下自提',
+  `store_id` BIGINT(20) DEFAULT NULL COMMENT '自提门店ID（仅自提时有值）',
   `status` TINYINT(1) DEFAULT 0 COMMENT '订单状态：0-待付款，1-待发货，2-待收货，3-已完成，4-已取消，5-退款中，6-已退款',
   `pay_type` TINYINT(1) DEFAULT 0 COMMENT '支付方式：0-未支付，1-微信，2-支付宝，3-银行卡',
   `pay_time` DATETIME DEFAULT NULL COMMENT '支付时间',
@@ -133,6 +135,10 @@ CREATE TABLE `tb_order` (
   KEY `idx_status` (`status`),
   KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单表';
+
+-- 若订单表已存在且无 delivery_type/store_id 字段，可执行：
+-- ALTER TABLE tb_order ADD COLUMN delivery_type TINYINT(1) DEFAULT 1 COMMENT '配送方式：1-线上配送，2-线下自提';
+-- ALTER TABLE tb_order ADD COLUMN store_id BIGINT(20) DEFAULT NULL COMMENT '自提门店ID（仅自提时有值）';
 
 -- ============================================
 -- 6. 订单项表

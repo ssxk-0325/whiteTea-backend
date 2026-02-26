@@ -2,14 +2,20 @@ package com.fuding.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fuding.entity.Address;
 import com.fuding.entity.Cart;
 import com.fuding.entity.Order;
 import com.fuding.entity.OrderItem;
 import com.fuding.entity.Product;
+import com.fuding.entity.Store;
+import com.fuding.entity.User;
+import com.fuding.mapper.AddressMapper;
 import com.fuding.mapper.CartMapper;
 import com.fuding.mapper.OrderItemMapper;
 import com.fuding.mapper.OrderMapper;
 import com.fuding.mapper.ProductMapper;
+import com.fuding.mapper.StoreMapper;
+import com.fuding.mapper.UserMapper;
 import com.fuding.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -39,8 +45,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Autowired
     private ProductMapper productMapper;
 
+    @Autowired
+    private StoreMapper storeMapper;
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
+    private AddressMapper addressMapper;
+
     @Override
-    public Order createOrder(Long userId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark) {
+    public Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark) {
         // 获取购物车商品
         LambdaQueryWrapper<Cart> cartWrapper = new LambdaQueryWrapper<>();
         cartWrapper.eq(Cart::getUserId, userId);
@@ -50,10 +65,42 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new RuntimeException("购物车为空，无法创建订单");
         }
 
+        if (deliveryType == null) {
+            deliveryType = 1;
+        }
+        if (deliveryType == 2) {
+            // 线下自提：校验门店并填充收货信息
+            if (storeId == null) {
+                throw new RuntimeException("请选择自提门店");
+            }
+            Store store = storeMapper.selectById(storeId);
+            if (store == null) {
+                throw new RuntimeException("门店不存在");
+            }
+            User user = userMapper.selectById(userId);
+            receiverName = (user != null && user.getNickname() != null && !user.getNickname().isEmpty()) ? user.getNickname() : "到店自提";
+            receiverPhone = (user != null && user.getPhone() != null) ? user.getPhone() : "";
+            receiverAddress = store.getName() + " " + (store.getAddress() != null ? store.getAddress() : "");
+        } else {
+            // 线上配送：校验地址
+            if (addressId == null) {
+                throw new RuntimeException("请选择收货地址");
+            }
+            Address address = addressMapper.selectById(addressId);
+            if (address == null) {
+                throw new RuntimeException("收货地址不存在");
+            }
+            receiverName = address.getReceiverName();
+            receiverPhone = address.getReceiverPhone();
+            receiverAddress = (address.getProvince() != null ? address.getProvince() : "") + (address.getCity() != null ? address.getCity() : "") + (address.getDistrict() != null ? address.getDistrict() : "") + (address.getDetail() != null ? address.getDetail() : "");
+        }
+
         // 创建订单
         Order order = new Order();
         order.setOrderNo(generateOrderNo());
         order.setUserId(userId);
+        order.setDeliveryType(deliveryType);
+        order.setStoreId(deliveryType == 2 ? storeId : null);
         order.setReceiverName(receiverName);
         order.setReceiverPhone(receiverPhone);
         order.setReceiverAddress(receiverAddress);

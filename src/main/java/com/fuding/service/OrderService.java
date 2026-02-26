@@ -10,8 +10,11 @@ public interface OrderService {
 
     /**
      * 创建订单
+     * @param deliveryType 配送方式：1-线上配送，2-线下自提
+     * @param storeId 自提门店ID（自提时必填）
+     * @param addressId 收货地址ID（配送时必填）
      */
-    Order createOrder(Long userId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark);
+    Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark);
 
     /**
      * 根据ID获取订单
