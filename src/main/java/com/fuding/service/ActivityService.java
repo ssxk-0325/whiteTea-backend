@@ -15,8 +15,10 @@ public interface ActivityService {
 
     /**
      * 获取活动列表（分页）
+     *
+     * @param category 可选：experience=仅茶艺/参观/品鉴/制茶(1-4)；industry=仅采摘招募与批发培训(5-6)；null=不限类型
      */
-    IPage<ExperienceActivity> getActivityList(Page<ExperienceActivity> page, Integer type, String keyword);
+    IPage<ExperienceActivity> getActivityList(Page<ExperienceActivity> page, Integer type, String keyword, String category);
 
     /**
      * 获取活动详情

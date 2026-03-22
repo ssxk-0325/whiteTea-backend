@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,11 +36,17 @@ public class ActivityServiceImpl extends ServiceImpl<ExperienceActivityMapper, E
     private UserActivityCouponMapper couponMapper;
 
     @Override
-    public IPage<ExperienceActivity> getActivityList(Page<ExperienceActivity> page, Integer type, String keyword) {
+    public IPage<ExperienceActivity> getActivityList(Page<ExperienceActivity> page, Integer type, String keyword, String category) {
         LambdaQueryWrapper<ExperienceActivity> wrapper = new LambdaQueryWrapper<>();
         wrapper.ne(ExperienceActivity::getStatus, 3); // 不显示已取消的
         if (type != null) {
             wrapper.eq(ExperienceActivity::getType, type);
+        } else if (category != null && !category.trim().isEmpty()) {
+            if ("experience".equalsIgnoreCase(category.trim())) {
+                wrapper.in(ExperienceActivity::getType, Arrays.asList(1, 2, 3, 4));
+            } else if ("industry".equalsIgnoreCase(category.trim())) {
+                wrapper.in(ExperienceActivity::getType, Arrays.asList(5, 6));
+            }
         }
         if (keyword != null && !keyword.trim().isEmpty()) {
             wrapper.and(w -> w.like(ExperienceActivity::getName, keyword)
@@ -176,6 +183,12 @@ public class ActivityServiceImpl extends ServiceImpl<ExperienceActivityMapper, E
                 break;
             case 4:
                 prefix = "MAKE";
+                break;
+            case 5:
+                prefix = "PICK";
+                break;
+            case 6:
+                prefix = "WHSL";
                 break;
             default:
                 prefix = "ACT";

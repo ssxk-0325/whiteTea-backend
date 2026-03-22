@@ -36,7 +36,7 @@ public class ExperienceActivity extends BaseEntity {
     private String image;
 
     /**
-     * 活动类型：1-茶艺课，2-茶园参观，3-线下品鉴会，4-制茶体验
+     * 活动类型：1-茶艺课，2-茶园参观，3-线下品鉴会，4-制茶体验，5-采摘招募，6-批发与培训
      */
     @TableField("type")
     private Integer type = 1;
