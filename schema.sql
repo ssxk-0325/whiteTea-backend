@@ -592,6 +592,31 @@ INSERT INTO `tb_store` (`name`, `description`, `image`, `province`, `city`, `dis
 ('茶艺空间（CBD店）', '商务区核心位置，适合商务洽谈', NULL, '福建省', '宁德市', '福鼎市', 'CBD中央商务区188号', 120.223611, 27.332222, '0593-1234581', '09:00-21:30', 1, NOW(), NOW());
 
 -- ============================================
+-- 24. 产业服务加入申请表（采摘招募/批发与培训）
+-- ============================================
+DROP TABLE IF EXISTS `tb_industry_application`;
+CREATE TABLE `tb_industry_application` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `activity_id` BIGINT(20) NOT NULL COMMENT '对应信息ID（tb_experience_activity.id）',
+  `user_id` BIGINT(20) NOT NULL COMMENT '用户ID',
+  `real_name` VARCHAR(50) NOT NULL COMMENT '姓名',
+  `phone` VARCHAR(20) NOT NULL COMMENT '手机号',
+  `location` VARCHAR(100) DEFAULT NULL COMMENT '所在地/区域',
+  `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注/补充说明',
+  `status` TINYINT(1) DEFAULT 0 COMMENT '状态：0-待审核，1-通过，2-驳回',
+  `admin_remark` VARCHAR(500) DEFAULT NULL COMMENT '管理员审核备注',
+  `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+  `deleted` INT(11) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_activity` (`user_id`, `activity_id`),
+  KEY `idx_activity_id` (`activity_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='产业服务加入申请表';
+
+-- ============================================
 -- 18. 奖品表
 -- ============================================
 DROP TABLE IF EXISTS `tb_reward`;

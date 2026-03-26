@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fuding.common.Result;
 import com.fuding.entity.ExperienceActivity;
+import com.fuding.entity.IndustryApplication;
 import com.fuding.entity.UserActivityCoupon;
 import com.fuding.service.ActivityService;
+import com.fuding.service.IndustryApplicationService;
 import com.fuding.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +30,9 @@ public class ActivityController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private IndustryApplicationService industryApplicationService;
 
     /**
      * 获取活动列表
@@ -118,6 +123,44 @@ public class ActivityController {
             Map<String, Object> result = new HashMap<>();
             result.put("hasGrabbed", hasGrabbed);
             return Result.success(result);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 产业服务：我要加入（采摘招募/批发与培训，type=5/6）
+     */
+    @PostMapping("/{id}/join")
+    public Result<IndustryApplication> joinIndustry(@PathVariable Long id,
+                                                    @RequestBody Map<String, Object> params,
+                                                    HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            IndustryApplication app = industryApplicationService.submit(userId, id, params);
+            return Result.success("提交成功，请等待审核", app);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 产业服务：查询我的加入申请
+     */
+    @GetMapping("/{id}/my-join")
+    public Result<IndustryApplication> myJoin(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            IndustryApplication app = industryApplicationService.getMyApplication(userId, id);
+            return Result.success(app);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -227,6 +270,55 @@ public class ActivityController {
 
             activityService.verifyCoupon(couponCode.trim());
             return Result.success("核销成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员：产业服务加入申请列表
+     */
+    @GetMapping("/admin/industry-joins")
+    public Result<IPage<Map<String, Object>>> adminIndustryJoins(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer type,
+            @RequestParam(required = false) String keyword,
+            HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            jwtUtil.getUserIdFromToken(token); // 验证token有效性
+
+            Page<IndustryApplication> p = new Page<>(page + 1, size);
+            IPage<Map<String, Object>> result = industryApplicationService.adminList(p, status, type, keyword);
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员：审核产业服务加入申请（status=1通过/2驳回）
+     */
+    @PutMapping("/admin/industry-joins/{id}/review")
+    public Result<IndustryApplication> adminReviewIndustryJoin(@PathVariable Long id,
+                                                               @RequestBody Map<String, Object> params,
+                                                               HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            jwtUtil.getUserIdFromToken(token); // 验证token有效性
+
+            Integer status = params.get("status") != null ? Integer.valueOf(String.valueOf(params.get("status"))) : null;
+            String adminRemark = params.get("adminRemark") != null ? String.valueOf(params.get("adminRemark")) : null;
+            IndustryApplication app = industryApplicationService.adminReview(id, status, adminRemark);
+            return Result.success("审核成功", app);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
