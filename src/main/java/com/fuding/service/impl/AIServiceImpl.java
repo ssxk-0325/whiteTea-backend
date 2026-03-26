@@ -60,6 +60,9 @@ public class AIServiceImpl implements AIService {
         try {
             // 根据配置的API类型调用不同的接口
             switch (aiApiType.toLowerCase()) {
+                case "qianfan":
+                    // 千帆V2 Chat Completions为OpenAI风格返回（choices[0].message.content）
+                    return callOpenAIAPI(userMessage, conversationHistory, systemPrompt);
                 case "wenxin":
                     return callWenxinAPI(userMessage, conversationHistory, systemPrompt);
                 case "tongyi":
@@ -76,71 +79,95 @@ public class AIServiceImpl implements AIService {
         }
     }
 
+    private String parseOpenAIStyleContent(JSONObject jsonResponse) {
+        try {
+            if (jsonResponse == null) return null;
+            if (jsonResponse.containsKey("choices") && jsonResponse.getJSONArray("choices") != null
+                    && jsonResponse.getJSONArray("choices").size() > 0) {
+                JSONObject choice = jsonResponse.getJSONArray("choices").getJSONObject(0);
+                if (choice == null) return null;
+                JSONObject message = choice.getJSONObject("message");
+                if (message != null && message.containsKey("content")) {
+                    return message.getString("content");
+                }
+            }
+        } catch (Exception ignore) {
+            // 解析失败则返回null，由上层兜底
+        }
+        return null;
+    }
+
     /**
      * 调用文心一言API
      */
     private String callWenxinAPI(String userMessage, List<String> conversationHistory, String systemPrompt) {
         try {
-            CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpPost httpPost = new HttpPost(aiApiUrl);
+            try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                HttpPost httpPost = new HttpPost(aiApiUrl);
 
-            // 设置请求头
-            httpPost.setHeader("Content-Type", "application/json");
-            httpPost.setHeader("Authorization", "Bearer " + aiApiKey);
+                // 设置请求头
+                httpPost.setHeader("Content-Type", "application/json");
+                httpPost.setHeader("Authorization", "Bearer " + aiApiKey);
 
-            // 构建请求体
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", aiModel.isEmpty() ? "ernie-bot-turbo" : aiModel);
-            
-            // 构建消息列表
-            List<Map<String, String>> messages = new ArrayList<>();
-            
-            // 添加系统提示词
-            Map<String, String> systemMsg = new HashMap<>();
-            systemMsg.put("role", "system");
-            systemMsg.put("content", systemPrompt);
-            messages.add(systemMsg);
-            
-            // 添加对话历史
-            if (conversationHistory != null && !conversationHistory.isEmpty()) {
-                for (String history : conversationHistory) {
-                    String[] parts = history.split(":", 2);
-                    if (parts.length == 2) {
-                        Map<String, String> msg = new HashMap<>();
-                        msg.put("role", parts[0].trim().equals("用户") ? "user" : "assistant");
-                        msg.put("content", parts[1].trim());
-                        messages.add(msg);
+                // 构建请求体
+                Map<String, Object> requestBody = new HashMap<>();
+                requestBody.put("model", aiModel.isEmpty() ? "ernie-bot-turbo" : aiModel);
+
+                // 构建消息列表
+                List<Map<String, String>> messages = new ArrayList<>();
+
+                // 添加系统提示词
+                Map<String, String> systemMsg = new HashMap<>();
+                systemMsg.put("role", "system");
+                systemMsg.put("content", systemPrompt);
+                messages.add(systemMsg);
+
+                // 添加对话历史
+                if (conversationHistory != null && !conversationHistory.isEmpty()) {
+                    for (String history : conversationHistory) {
+                        String[] parts = history.split(":", 2);
+                        if (parts.length == 2) {
+                            Map<String, String> msg = new HashMap<>();
+                            msg.put("role", parts[0].trim().equals("用户") ? "user" : "assistant");
+                            msg.put("content", parts[1].trim());
+                            messages.add(msg);
+                        }
+                    }
+                }
+
+                // 添加当前用户消息
+                Map<String, String> userMsg = new HashMap<>();
+                userMsg.put("role", "user");
+                userMsg.put("content", userMessage);
+                messages.add(userMsg);
+
+                requestBody.put("messages", messages);
+                requestBody.put("temperature", 0.7);
+                requestBody.put("max_output_tokens", 2000);
+
+                StringEntity entity = new StringEntity(JSON.toJSONString(requestBody), StandardCharsets.UTF_8);
+                httpPost.setEntity(entity);
+
+                try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                    HttpEntity responseEntity = response.getEntity();
+                    String responseBody = EntityUtils.toString(responseEntity, StandardCharsets.UTF_8);
+
+                    // 解析响应
+                    JSONObject jsonResponse = JSON.parseObject(responseBody);
+                    if (jsonResponse.containsKey("result")) {
+                        return jsonResponse.getString("result");
+                    }
+                    // 兼容OpenAI风格（例如千帆V2 /v2/chat/completions）
+                    String openAIContent = parseOpenAIStyleContent(jsonResponse);
+                    if (openAIContent != null && !openAIContent.trim().isEmpty()) {
+                        return openAIContent;
+                    }
+                    if (jsonResponse.containsKey("error")) {
+                        logger.error("文心一言API错误：{}", jsonResponse.getString("error"));
+                        return getMockReply(userMessage);
                     }
                 }
             }
-            
-            // 添加当前用户消息
-            Map<String, String> userMsg = new HashMap<>();
-            userMsg.put("role", "user");
-            userMsg.put("content", userMessage);
-            messages.add(userMsg);
-            
-            requestBody.put("messages", messages);
-            requestBody.put("temperature", 0.7);
-            requestBody.put("max_output_tokens", 2000);
-
-            StringEntity entity = new StringEntity(JSON.toJSONString(requestBody), StandardCharsets.UTF_8);
-            httpPost.setEntity(entity);
-
-            CloseableHttpResponse response = httpClient.execute(httpPost);
-            HttpEntity responseEntity = response.getEntity();
-            String responseBody = EntityUtils.toString(responseEntity, StandardCharsets.UTF_8);
-
-            // 解析响应
-            JSONObject jsonResponse = JSON.parseObject(responseBody);
-            if (jsonResponse.containsKey("result")) {
-                return jsonResponse.getString("result");
-            } else if (jsonResponse.containsKey("error")) {
-                logger.error("文心一言API错误：{}", jsonResponse.getString("error"));
-                return getMockReply(userMessage);
-            }
-
-            httpClient.close();
             return getMockReply(userMessage);
         } catch (Exception e) {
             logger.error("调用文心一言API异常：", e);
@@ -162,58 +189,57 @@ public class AIServiceImpl implements AIService {
      */
     private String callOpenAIAPI(String userMessage, List<String> conversationHistory, String systemPrompt) {
         try {
-            CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpPost httpPost = new HttpPost(aiApiUrl);
+            try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                HttpPost httpPost = new HttpPost(aiApiUrl);
 
-            httpPost.setHeader("Content-Type", "application/json");
-            httpPost.setHeader("Authorization", "Bearer " + aiApiKey);
+                httpPost.setHeader("Content-Type", "application/json");
+                httpPost.setHeader("Authorization", "Bearer " + aiApiKey);
 
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", aiModel.isEmpty() ? "gpt-3.5-turbo" : aiModel);
-            
-            List<Map<String, String>> messages = new ArrayList<>();
-            
-            Map<String, String> systemMsg = new HashMap<>();
-            systemMsg.put("role", "system");
-            systemMsg.put("content", systemPrompt);
-            messages.add(systemMsg);
-            
-            if (conversationHistory != null && !conversationHistory.isEmpty()) {
-                for (String history : conversationHistory) {
-                    String[] parts = history.split(":", 2);
-                    if (parts.length == 2) {
-                        Map<String, String> msg = new HashMap<>();
-                        msg.put("role", parts[0].trim().equals("用户") ? "user" : "assistant");
-                        msg.put("content", parts[1].trim());
-                        messages.add(msg);
+                Map<String, Object> requestBody = new HashMap<>();
+                requestBody.put("model", aiModel.isEmpty() ? "gpt-3.5-turbo" : aiModel);
+
+                List<Map<String, String>> messages = new ArrayList<>();
+
+                Map<String, String> systemMsg = new HashMap<>();
+                systemMsg.put("role", "system");
+                systemMsg.put("content", systemPrompt);
+                messages.add(systemMsg);
+
+                if (conversationHistory != null && !conversationHistory.isEmpty()) {
+                    for (String history : conversationHistory) {
+                        String[] parts = history.split(":", 2);
+                        if (parts.length == 2) {
+                            Map<String, String> msg = new HashMap<>();
+                            msg.put("role", parts[0].trim().equals("用户") ? "user" : "assistant");
+                            msg.put("content", parts[1].trim());
+                            messages.add(msg);
+                        }
+                    }
+                }
+
+                Map<String, String> userMsg = new HashMap<>();
+                userMsg.put("role", "user");
+                userMsg.put("content", userMessage);
+                messages.add(userMsg);
+
+                requestBody.put("messages", messages);
+                requestBody.put("temperature", 0.7);
+                requestBody.put("max_tokens", 2000);
+
+                StringEntity entity = new StringEntity(JSON.toJSONString(requestBody), StandardCharsets.UTF_8);
+                httpPost.setEntity(entity);
+
+                try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                    HttpEntity responseEntity = response.getEntity();
+                    String responseBody = EntityUtils.toString(responseEntity, StandardCharsets.UTF_8);
+
+                    JSONObject jsonResponse = JSON.parseObject(responseBody);
+                    String content = parseOpenAIStyleContent(jsonResponse);
+                    if (content != null && !content.trim().isEmpty()) {
+                        return content;
                     }
                 }
             }
-            
-            Map<String, String> userMsg = new HashMap<>();
-            userMsg.put("role", "user");
-            userMsg.put("content", userMessage);
-            messages.add(userMsg);
-            
-            requestBody.put("messages", messages);
-            requestBody.put("temperature", 0.7);
-            requestBody.put("max_tokens", 2000);
-
-            StringEntity entity = new StringEntity(JSON.toJSONString(requestBody), StandardCharsets.UTF_8);
-            httpPost.setEntity(entity);
-
-            CloseableHttpResponse response = httpClient.execute(httpPost);
-            HttpEntity responseEntity = response.getEntity();
-            String responseBody = EntityUtils.toString(responseEntity, StandardCharsets.UTF_8);
-
-            JSONObject jsonResponse = JSON.parseObject(responseBody);
-            if (jsonResponse.containsKey("choices") && jsonResponse.getJSONArray("choices").size() > 0) {
-                JSONObject choice = jsonResponse.getJSONArray("choices").getJSONObject(0);
-                JSONObject message = choice.getJSONObject("message");
-                return message.getString("content");
-            }
-
-            httpClient.close();
             return getMockReply(userMessage);
         } catch (Exception e) {
             logger.error("调用OpenAI API异常：", e);

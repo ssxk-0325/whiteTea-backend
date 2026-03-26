@@ -58,10 +58,14 @@ mybatis-plus:
 # AI API配置
 ai:
   api:
-    url: # 大模型API地址，例如：https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-bot-turbo
-    key: # API密钥
-    type: wenxin # wenxin(文心一言), tongyi(通义千问), openai(ChatGPT)
-    model: # 模型名称，例如：ernie-bot-turbo, gpt-3.5-turbo
+    # 千帆（Qianfan）V2 Chat Completions（OpenAI风格）
+    # 文档：https://cloud.baidu.com/doc/qianfan-api/s/ym9chdsy5
+    url: https://qianfan.baidubce.com/v2/chat/completions
+    # API Key请使用环境变量/密钥管理，不要明文写入仓库
+    key: bce-v3/ALTAK-PZI1EXJ5JORWWM7Odnrf8/a7b00571b007d3af0ffc9de63b7e7eac485a6af0 # ${QIANFAN_API_KEY:}
+    # qianfan返回为OpenAI风格choices结构，使用openai解析逻辑即可
+    type: qianfan # qianfan(千帆V2), wenxin(旧文心), tongyi(通义千问), openai(OpenAI兼容)
+    model: ernie-3.5-8k # 例如：ernie-3.5-8k
 
 # 日志配置
 logging:
