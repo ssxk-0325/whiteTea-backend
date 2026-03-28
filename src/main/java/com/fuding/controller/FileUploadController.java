@@ -20,6 +20,9 @@ import java.util.UUID;
 @CrossOrigin
 public class FileUploadController {
 
+    @Value("${server.servlet.context-path:}")
+    private String servletContextPath;
+
     @Value("${file.upload.path}")
     private String uploadPath;
 
@@ -60,8 +63,7 @@ public class FileUploadController {
             Path path = Paths.get(imageDir + filename);
             Files.write(path, file.getBytes());
 
-            // 返回访问URL（实际项目中应该配置静态资源访问路径）
-            String url = "/uploads/white-tea/images/" + filename;
+            String url = buildPublicFileUrl("/uploads/white-tea/images/" + filename);
             return Result.success("上传成功", url);
         } catch (IOException e) {
             return Result.error("文件上传失败：" + e.getMessage());
@@ -105,14 +107,25 @@ public class FileUploadController {
             Path path = Paths.get(videoDir + filename);
             Files.write(path, file.getBytes());
 
-            // 返回访问URL
-            String url = "/uploads/white-tea/videos/" + filename;
+            String url = buildPublicFileUrl("/uploads/white-tea/videos/" + filename);
             return Result.success("上传成功", url);
         } catch (IOException e) {
             return Result.error("文件上传失败：" + e.getMessage());
         } catch (Exception e) {
             return Result.error("文件上传失败：" + e.getMessage());
         }
+    }
+
+    /** 拼接 context-path，使前端通过同一 /api 前缀访问上传文件 */
+    private String buildPublicFileUrl(String path) {
+        String cp = servletContextPath != null ? servletContextPath : "";
+        if (cp.endsWith("/")) {
+            cp = cp.substring(0, cp.length() - 1);
+        }
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        return cp + path;
     }
 }
 
