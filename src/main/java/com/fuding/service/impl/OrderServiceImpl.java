@@ -55,14 +55,20 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private AddressMapper addressMapper;
 
     @Override
-    public Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark) {
-        // 获取购物车商品
+    public Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark, List<Long> cartIds) {
+        // 获取购物车商品（可指定购物车项 id，仅结算选中商品）
         LambdaQueryWrapper<Cart> cartWrapper = new LambdaQueryWrapper<>();
         cartWrapper.eq(Cart::getUserId, userId);
+        if (cartIds != null && !cartIds.isEmpty()) {
+            cartWrapper.in(Cart::getId, cartIds);
+        }
         List<Cart> cartList = cartMapper.selectList(cartWrapper);
 
         if (cartList == null || cartList.isEmpty()) {
             throw new RuntimeException("购物车为空，无法创建订单");
+        }
+        if (cartIds != null && !cartIds.isEmpty() && cartList.size() != cartIds.size()) {
+            throw new RuntimeException("部分购物车项不存在或已失效，请刷新购物车后重试");
         }
 
         if (deliveryType == null) {
@@ -150,7 +156,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             productMapper.updateById(product);
         }
 
-        // 清空购物车
+        // 仅删除已下单的购物车项
         cartMapper.delete(cartWrapper);
 
         return order;

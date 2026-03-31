@@ -1,6 +1,7 @@
 package com.fuding.service;
 
 import com.fuding.entity.Order;
+
 import java.util.List;
 
 /**
@@ -13,8 +14,9 @@ public interface OrderService {
      * @param deliveryType 配送方式：1-线上配送，2-线下自提
      * @param storeId 自提门店ID（自提时必填）
      * @param addressId 收货地址ID（配送时必填）
+     * @param cartIds 要结算的购物车项 id，null 或空表示整单结算（兼容旧接口）
      */
-    Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark);
+    Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark, List<Long> cartIds);
 
     /**
      * 根据ID获取订单

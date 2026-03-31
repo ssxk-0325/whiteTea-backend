@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +53,19 @@ public class OrderController {
             String receiverAddress = params.get("receiverAddress") != null ? params.get("receiverAddress").toString() : "";
             String remark = params.get("remark") != null ? params.get("remark").toString() : "";
 
-            Order order = orderService.createOrder(userId, deliveryType, storeId, addressId, receiverName, receiverPhone, receiverAddress, remark);
+            List<Long> cartIds = null;
+            Object cartIdsObj = params.get("cartIds");
+            if (cartIdsObj instanceof List) {
+                List<?> rawList = (List<?>) cartIdsObj;
+                cartIds = new ArrayList<>();
+                for (Object o : rawList) {
+                    if (o != null) {
+                        cartIds.add(Long.valueOf(o.toString()));
+                    }
+                }
+            }
+
+            Order order = orderService.createOrder(userId, deliveryType, storeId, addressId, receiverName, receiverPhone, receiverAddress, remark, cartIds);
             return Result.success("订单创建成功", order);
         } catch (Exception e) {
             return Result.error(e.getMessage());
