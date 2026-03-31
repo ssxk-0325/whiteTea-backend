@@ -3,6 +3,7 @@ package com.fuding.controller;
 import com.fuding.common.Result;
 import com.fuding.entity.Product;
 import com.fuding.service.ProductService;
+import com.fuding.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -10,8 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * 产品控制器
@@ -23,6 +24,9 @@ public class ProductController {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     /**
      * 分页查询产品
@@ -69,6 +73,38 @@ public class ProductController {
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
+    }
+
+    /**
+     * 猜你喜欢：为当前登录用户推荐产品
+     */
+    @GetMapping("/recommend")
+    public Result<List<Product>> getRecommendProducts(
+            @RequestParam(defaultValue = "10") Integer limit,
+            HttpServletRequest request) {
+        try {
+            Long userId = getUserId(request);
+            if (userId == null) {
+                return Result.error("请先登录");
+            }
+            List<Product> products = productService.recommendForUser(userId, limit);
+            return Result.success(products);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    private Long getUserId(HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+            try {
+                return jwtUtil.getUserIdFromToken(token);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return null;
     }
 
     /**

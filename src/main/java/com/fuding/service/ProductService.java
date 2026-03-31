@@ -4,6 +4,8 @@ import com.fuding.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 /**
  * 产品服务接口
  */
@@ -38,5 +40,10 @@ public interface ProductService {
      * 查找热门产品
      */
     Page<Product> findHotProducts(Pageable pageable);
+
+    /**
+     * 为指定用户推荐产品（猜你喜欢）
+     */
+    List<Product> recommendForUser(Long userId, Integer limit);
 }
 
