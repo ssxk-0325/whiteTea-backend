@@ -1,7 +1,9 @@
 package com.fuding.controller;
 
 import com.fuding.common.Result;
+import com.fuding.entity.OrderReview;
 import com.fuding.entity.Product;
+import com.fuding.service.OrderReviewService;
 import com.fuding.service.ProductService;
 import com.fuding.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,23 @@ public class ProductController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private OrderReviewService orderReviewService;
+
+    /**
+     * 商品相关订单评价（用于详情页展示）
+     */
+    @GetMapping("/reviews")
+    public Result<List<OrderReview>> getProductReviews(
+            @RequestParam Long productId,
+            @RequestParam(defaultValue = "10") Integer size) {
+        try {
+            return Result.success(orderReviewService.listByProductId(productId, size));
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 
     /**
      * 分页查询产品

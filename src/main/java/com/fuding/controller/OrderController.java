@@ -3,7 +3,9 @@ package com.fuding.controller;
 import com.fuding.common.Result;
 import com.fuding.entity.Order;
 import com.fuding.entity.OrderItem;
+import com.fuding.entity.OrderReview;
 import com.fuding.mapper.OrderItemMapper;
+import com.fuding.service.OrderReviewService;
 import com.fuding.service.OrderService;
 import com.fuding.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,9 @@ public class OrderController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private OrderReviewService orderReviewService;
 
     /**
      * 创建订单
@@ -98,8 +103,53 @@ public class OrderController {
             Map<String, Object> data = new HashMap<>();
             data.put("order", order);
             data.put("items", items);
+            data.put("review", orderReviewService.getByOrderIdEnriched(id));
 
             return Result.success(data);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 提交订单评价（仅已完成订单）
+     */
+    @PostMapping("/{id}/review")
+    public Result<OrderReview> submitOrderReview(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> params,
+            HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            Integer rating = params.get("rating") != null ? Integer.valueOf(params.get("rating").toString()) : null;
+            String content = params.get("content") != null ? params.get("content").toString() : null;
+            OrderReview review = orderReviewService.createReview(userId, id, rating, content);
+            return Result.success("评价成功", review);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取订单评价
+     */
+    @GetMapping("/{id}/review")
+    public Result<OrderReview> getOrderReview(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            Order order = orderService.getOrderById(id);
+            if (!order.getUserId().equals(userId)) {
+                return Result.error("无权访问该订单");
+            }
+            return Result.success(orderReviewService.getByOrderIdEnriched(id));
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -147,6 +197,12 @@ public class OrderController {
                 wrapper.eq(OrderItem::getOrderId, order.getId());
                 List<OrderItem> items = orderItemMapper.selectList(wrapper);
                 orderMap.put("items", items);
+
+                if (order.getStatus() != null && order.getStatus() == 3) {
+                    orderMap.put("hasReview", orderReviewService.existsByOrderId(order.getId()));
+                } else {
+                    orderMap.put("hasReview", false);
+                }
 
                 return orderMap;
             }).collect(Collectors.toList());
