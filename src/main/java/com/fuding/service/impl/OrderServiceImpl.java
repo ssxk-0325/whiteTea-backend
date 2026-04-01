@@ -8,6 +8,7 @@ import com.fuding.entity.Order;
 import com.fuding.entity.OrderItem;
 import com.fuding.entity.Product;
 import com.fuding.entity.Store;
+import com.fuding.entity.UserActivityCoupon;
 import com.fuding.entity.User;
 import com.fuding.mapper.AddressMapper;
 import com.fuding.mapper.CartMapper;
@@ -15,6 +16,7 @@ import com.fuding.mapper.OrderItemMapper;
 import com.fuding.mapper.OrderMapper;
 import com.fuding.mapper.ProductMapper;
 import com.fuding.mapper.StoreMapper;
+import com.fuding.mapper.UserActivityCouponMapper;
 import com.fuding.mapper.UserMapper;
 import com.fuding.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -54,8 +57,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Autowired
     private AddressMapper addressMapper;
 
+    @Autowired
+    private UserActivityCouponMapper userActivityCouponMapper;
+
     @Override
-    public Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark, List<Long> cartIds) {
+    public Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark, List<Long> cartIds, Long couponId, Integer orderMode) {
         // 获取购物车商品（可指定购物车项 id，仅结算选中商品）
         LambdaQueryWrapper<Cart> cartWrapper = new LambdaQueryWrapper<>();
         cartWrapper.eq(Cart::getUserId, userId);
@@ -116,6 +122,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         // 计算订单总金额
         BigDecimal totalAmount = BigDecimal.ZERO;
+        int totalQuantity = 0;
         for (Cart cart : cartList) {
             Product product = productMapper.selectById(cart.getProductId());
             if (product == null) {
@@ -127,10 +134,68 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             BigDecimal price = product.getPrice();
             BigDecimal quantity = new BigDecimal(cart.getQuantity());
             totalAmount = totalAmount.add(price.multiply(quantity));
+            totalQuantity += cart.getQuantity();
+        }
+
+        if (orderMode == null) {
+            orderMode = 0;
+        }
+        BigDecimal groupDiscountAmount = BigDecimal.ZERO;
+        if (orderMode == 1) {
+            // 拼团统一 9 折
+            groupDiscountAmount = totalAmount.multiply(new BigDecimal("0.10")).setScale(2, RoundingMode.HALF_UP);
+        }
+
+        BigDecimal wholesaleRate = BigDecimal.ZERO;
+        if (totalQuantity >= 20) {
+            wholesaleRate = new BigDecimal("0.15");
+        } else if (totalQuantity >= 10) {
+            wholesaleRate = new BigDecimal("0.08");
+        }
+        BigDecimal wholesaleDiscountAmount = totalAmount.multiply(wholesaleRate).setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal couponDiscountAmount = BigDecimal.ZERO;
+        UserActivityCoupon coupon = null;
+        if (couponId != null) {
+            coupon = userActivityCouponMapper.selectById(couponId);
+            if (coupon == null || !coupon.getUserId().equals(userId)) {
+                throw new RuntimeException("优惠券不存在");
+            }
+            if (coupon.getStatus() != null && coupon.getStatus() != 0) {
+                throw new RuntimeException("优惠券不可用");
+            }
+            if (coupon.getExpireTime() != null && LocalDateTime.now().isAfter(coupon.getExpireTime())) {
+                throw new RuntimeException("优惠券已过期");
+            }
+            couponDiscountAmount = calculateCouponDiscount(coupon.getCouponType(), totalAmount);
+        }
+
+        BigDecimal discountAmount = groupDiscountAmount.add(wholesaleDiscountAmount).add(couponDiscountAmount);
+        if (discountAmount.compareTo(totalAmount) > 0) {
+            discountAmount = totalAmount;
+        }
+        BigDecimal payAmount = totalAmount.subtract(discountAmount).setScale(2, RoundingMode.HALF_UP);
+        if (payAmount.compareTo(BigDecimal.ZERO) < 0) {
+            payAmount = BigDecimal.ZERO;
+        }
+
+        int rewardPoints = payAmount.setScale(0, RoundingMode.DOWN).intValue();
+        if (orderMode == 1) {
+            rewardPoints += 10;
         }
 
         order.setTotalAmount(totalAmount);
-        order.setPayAmount(totalAmount);
+        order.setPayAmount(payAmount);
+        order.setOrderMode(orderMode);
+        order.setGroupDiscountAmount(groupDiscountAmount);
+        order.setWholesaleDiscountAmount(wholesaleDiscountAmount);
+        order.setCouponDiscountAmount(couponDiscountAmount);
+        order.setDiscountAmount(discountAmount);
+        order.setRewardPoints(rewardPoints);
+        if (coupon != null) {
+            order.setCouponId(coupon.getId());
+            order.setCouponCode(coupon.getCouponCode());
+        }
 
         // 保存订单
         orderMapper.insert(order);
@@ -158,6 +223,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         // 仅删除已下单的购物车项
         cartMapper.delete(cartWrapper);
+
+        if (coupon != null) {
+            coupon.setStatus(1);
+            coupon.setUseTime(LocalDateTime.now());
+            userActivityCouponMapper.updateById(coupon);
+        }
 
         return order;
     }
@@ -192,6 +263,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setPayType(payType);
         order.setPayTime(LocalDateTime.now());
         orderMapper.updateById(order);
+
+        User user = userMapper.selectById(order.getUserId());
+        if (user != null) {
+            int current = user.getPoints() == null ? 0 : user.getPoints();
+            int add = order.getRewardPoints() == null ? 0 : order.getRewardPoints();
+            user.setPoints(current + Math.max(add, 0));
+            userMapper.updateById(user);
+        }
     }
 
     @Override
@@ -255,6 +334,39 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      */
     private String generateOrderNo() {
         return "FT" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+    }
+
+    private BigDecimal calculateCouponDiscount(Integer couponType, BigDecimal totalAmount) {
+        if (couponType == null || totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal discount;
+        switch (couponType) {
+            case 1:
+                discount = new BigDecimal("20");
+                break;
+            case 2:
+                discount = new BigDecimal("30");
+                break;
+            case 3:
+                discount = new BigDecimal("50");
+                break;
+            case 4:
+                discount = new BigDecimal("80");
+                break;
+            case 5:
+                discount = totalAmount.multiply(new BigDecimal("0.05"));
+                break;
+            case 6:
+                discount = totalAmount.multiply(new BigDecimal("0.12"));
+                break;
+            default:
+                discount = new BigDecimal("10");
+        }
+        if (discount.compareTo(totalAmount) > 0) {
+            return totalAmount;
+        }
+        return discount.setScale(2, RoundingMode.HALF_UP);
     }
 }
 

@@ -106,4 +106,52 @@ public class Order extends BaseEntity {
      */
     @TableField("remark")
     private String remark;
+
+    /**
+     * 优惠券ID
+     */
+    @TableField("coupon_id")
+    private Long couponId;
+
+    /**
+     * 优惠券码
+     */
+    @TableField("coupon_code")
+    private String couponCode;
+
+    /**
+     * 下单模式：0-普通购买，1-拼团购买
+     */
+    @TableField("order_mode")
+    private Integer orderMode = 0;
+
+    /**
+     * 拼团折扣金额
+     */
+    @TableField("group_discount_amount")
+    private BigDecimal groupDiscountAmount;
+
+    /**
+     * 批发折扣金额
+     */
+    @TableField("wholesale_discount_amount")
+    private BigDecimal wholesaleDiscountAmount;
+
+    /**
+     * 优惠券抵扣金额
+     */
+    @TableField("coupon_discount_amount")
+    private BigDecimal couponDiscountAmount;
+
+    /**
+     * 总优惠金额
+     */
+    @TableField("discount_amount")
+    private BigDecimal discountAmount;
+
+    /**
+     * 购物奖励积分
+     */
+    @TableField("reward_points")
+    private Integer rewardPoints;
 }

@@ -28,3 +28,13 @@ CREATE TABLE IF NOT EXISTS `tb_order_review` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单评价表';
+
+-- 订单优惠与返积分字段（若已存在可忽略执行报错）
+ALTER TABLE `tb_order` ADD COLUMN `coupon_id` BIGINT(20) DEFAULT NULL COMMENT '优惠券ID';
+ALTER TABLE `tb_order` ADD COLUMN `coupon_code` VARCHAR(50) DEFAULT NULL COMMENT '优惠券码';
+ALTER TABLE `tb_order` ADD COLUMN `order_mode` TINYINT(1) DEFAULT 0 COMMENT '下单模式：0-普通购买，1-拼团购买';
+ALTER TABLE `tb_order` ADD COLUMN `group_discount_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '拼团折扣金额';
+ALTER TABLE `tb_order` ADD COLUMN `wholesale_discount_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '批发折扣金额';
+ALTER TABLE `tb_order` ADD COLUMN `coupon_discount_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '优惠券抵扣金额';
+ALTER TABLE `tb_order` ADD COLUMN `discount_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '总优惠金额';
+ALTER TABLE `tb_order` ADD COLUMN `reward_points` INT(11) DEFAULT 0 COMMENT '购物奖励积分';

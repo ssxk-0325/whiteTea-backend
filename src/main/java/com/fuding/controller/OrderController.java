@@ -70,7 +70,9 @@ public class OrderController {
                 }
             }
 
-            Order order = orderService.createOrder(userId, deliveryType, storeId, addressId, receiverName, receiverPhone, receiverAddress, remark, cartIds);
+            Long couponId = params.get("couponId") != null ? Long.valueOf(params.get("couponId").toString()) : null;
+            Integer orderMode = params.get("orderMode") != null ? Integer.valueOf(params.get("orderMode").toString()) : 0;
+            Order order = orderService.createOrder(userId, deliveryType, storeId, addressId, receiverName, receiverPhone, receiverAddress, remark, cartIds, couponId, orderMode);
             return Result.success("订单创建成功", order);
         } catch (Exception e) {
             return Result.error(e.getMessage());
@@ -190,6 +192,14 @@ public class OrderController {
                 orderMap.put("shipTime", order.getShipTime());
                 orderMap.put("completeTime", order.getCompleteTime());
                 orderMap.put("remark", order.getRemark());
+                orderMap.put("couponId", order.getCouponId());
+                orderMap.put("couponCode", order.getCouponCode());
+                orderMap.put("orderMode", order.getOrderMode());
+                orderMap.put("groupDiscountAmount", order.getGroupDiscountAmount());
+                orderMap.put("wholesaleDiscountAmount", order.getWholesaleDiscountAmount());
+                orderMap.put("couponDiscountAmount", order.getCouponDiscountAmount());
+                orderMap.put("discountAmount", order.getDiscountAmount());
+                orderMap.put("rewardPoints", order.getRewardPoints());
 
                 // 获取订单项
                 com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<OrderItem> wrapper = 
@@ -315,6 +325,14 @@ public class OrderController {
                 orderMap.put("shipTime", order.getShipTime());
                 orderMap.put("completeTime", order.getCompleteTime());
                 orderMap.put("remark", order.getRemark());
+                orderMap.put("couponId", order.getCouponId());
+                orderMap.put("couponCode", order.getCouponCode());
+                orderMap.put("orderMode", order.getOrderMode());
+                orderMap.put("groupDiscountAmount", order.getGroupDiscountAmount());
+                orderMap.put("wholesaleDiscountAmount", order.getWholesaleDiscountAmount());
+                orderMap.put("couponDiscountAmount", order.getCouponDiscountAmount());
+                orderMap.put("discountAmount", order.getDiscountAmount());
+                orderMap.put("rewardPoints", order.getRewardPoints());
 
                 // 获取订单项
                 com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<OrderItem> wrapper = 

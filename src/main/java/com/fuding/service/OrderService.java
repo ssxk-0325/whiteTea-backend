@@ -16,7 +16,7 @@ public interface OrderService {
      * @param addressId 收货地址ID（配送时必填）
      * @param cartIds 要结算的购物车项 id，null 或空表示整单结算（兼容旧接口）
      */
-    Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark, List<Long> cartIds);
+    Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark, List<Long> cartIds, Long couponId, Integer orderMode);
 
     /**
      * 根据ID获取订单
