@@ -84,6 +84,54 @@ public class IndustryApplicationServiceImpl extends ServiceImpl<IndustryApplicat
     }
 
     @Override
+    public IPage<Map<String, Object>> getMyApplications(Page<IndustryApplication> page, Long userId, Integer status, Integer type) {
+        LambdaQueryWrapper<IndustryApplication> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(IndustryApplication::getUserId, userId);
+        if (status != null) {
+            wrapper.eq(IndustryApplication::getStatus, status);
+        }
+        wrapper.orderByDesc(IndustryApplication::getCreateTime);
+
+        IPage<IndustryApplication> appPage = applicationMapper.selectPage(page, wrapper);
+        List<IndustryApplication> apps = appPage.getRecords() != null ? appPage.getRecords() : Collections.emptyList();
+
+        Set<Long> activityIds = apps.stream().map(IndustryApplication::getActivityId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, ExperienceActivity> activityMap = activityIds.isEmpty()
+                ? Collections.emptyMap()
+                : activityMapper.selectBatchIds(activityIds).stream().collect(Collectors.toMap(ExperienceActivity::getId, Function.identity(), (a, b) -> a));
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (IndustryApplication app : apps) {
+            ExperienceActivity act = app.getActivityId() != null ? activityMap.get(app.getActivityId()) : null;
+            Integer actType = act != null ? act.getType() : null;
+            if (type != null) {
+                if (actType == null || !Objects.equals(actType, type)) continue;
+            } else {
+                if (actType == null || (actType != 5 && actType != 6)) continue;
+            }
+
+            Map<String, Object> row = new HashMap<>();
+            row.put("id", app.getId());
+            row.put("activityId", app.getActivityId());
+            row.put("realName", app.getRealName());
+            row.put("phone", app.getPhone());
+            row.put("location", app.getLocation());
+            row.put("remark", app.getRemark());
+            row.put("status", app.getStatus());
+            row.put("adminRemark", app.getAdminRemark());
+            row.put("createTime", app.getCreateTime());
+            row.put("updateTime", app.getUpdateTime());
+            row.put("activityName", act != null ? act.getName() : null);
+            row.put("activityType", actType);
+            rows.add(row);
+        }
+
+        Page<Map<String, Object>> voPage = new Page<>(appPage.getCurrent(), appPage.getSize(), appPage.getTotal());
+        voPage.setRecords(rows);
+        return voPage;
+    }
+
+    @Override
     public IPage<Map<String, Object>> adminList(Page<IndustryApplication> page, Integer status, Integer type, String keyword) {
         LambdaQueryWrapper<IndustryApplication> wrapper = new LambdaQueryWrapper<>();
         if (status != null) {

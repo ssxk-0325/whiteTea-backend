@@ -57,7 +57,7 @@ public class ActivityController {
     /**
      * 获取活动详情
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public Result<ExperienceActivity> getActivityDetail(@PathVariable Long id) {
         try {
             ExperienceActivity activity = activityService.getActivityById(id);
@@ -164,6 +164,43 @@ public class ActivityController {
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
+    }
+
+    /**
+     * 产业服务：我的加入申请列表（集中查看）
+     */
+    @GetMapping("/industry/my-joins")
+    public Result<IPage<Map<String, Object>>> myJoins(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer type,
+            HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            Page<IndustryApplication> p = new Page<>(page + 1, size);
+            IPage<Map<String, Object>> result = industryApplicationService.getMyApplications(p, userId, status, type);
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 兼容旧路径：/activity/my-joins
+     */
+    @GetMapping("/my-joins")
+    public Result<IPage<Map<String, Object>>> myJoinsCompat(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer type,
+            HttpServletRequest request) {
+        return myJoins(page, size, status, type, request);
     }
 
     // ========== 管理员接口 ==========
