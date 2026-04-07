@@ -259,6 +259,29 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (order.getStatus() != 0) {
             throw new RuntimeException("订单状态不正确，无法支付");
         }
+        applyPaidOrder(order, payType);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void payOrderFromAlipayNotify(String outTradeNo, String totalAmountStr) {
+        LambdaQueryWrapper<Order> w = new LambdaQueryWrapper<>();
+        w.eq(Order::getOrderNo, outTradeNo);
+        Order order = orderMapper.selectOne(w);
+        if (order == null) {
+            throw new RuntimeException("订单不存在");
+        }
+        if (order.getStatus() != 0) {
+            return;
+        }
+        BigDecimal paid = new BigDecimal(totalAmountStr);
+        if (order.getPayAmount().compareTo(paid) != 0) {
+            throw new RuntimeException("支付金额与订单不一致");
+        }
+        applyPaidOrder(order, 2);
+    }
+
+    private void applyPaidOrder(Order order, Integer payType) {
         order.setStatus(1); // 待发货
         order.setPayType(payType);
         order.setPayTime(LocalDateTime.now());

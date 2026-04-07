@@ -1,10 +1,12 @@
 package com.fuding.controller;
 
 import com.fuding.common.Result;
+import com.fuding.config.AlipayProperties;
 import com.fuding.entity.Order;
 import com.fuding.entity.OrderItem;
 import com.fuding.entity.OrderReview;
 import com.fuding.mapper.OrderItemMapper;
+import com.fuding.service.AlipayTradeService;
 import com.fuding.service.OrderReviewService;
 import com.fuding.service.OrderService;
 import com.fuding.util.JwtUtil;
@@ -12,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +41,12 @@ public class OrderController {
 
     @Autowired
     private OrderReviewService orderReviewService;
+
+    @Autowired
+    private AlipayTradeService alipayTradeService;
+
+    @Autowired
+    private AlipayProperties alipayProperties;
 
     /**
      * 创建订单
@@ -246,6 +256,47 @@ public class OrderController {
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
+    }
+
+    /**
+     * 支付宝电脑网站支付：返回自动提交表单 HTML，前端写入页面后提交跳转收银台
+     */
+    @PostMapping("/{id}/alipay/pay")
+    public Result<Map<String, String>> alipayPagePay(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            String formHtml = alipayTradeService.buildPagePayForm(userId, id);
+            Map<String, String> data = new HashMap<>();
+            data.put("formHtml", formHtml);
+            return Result.success(data);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 支付宝异步通知（验签成功后更新订单）
+     */
+    @PostMapping(value = "/alipay/notify", produces = "text/plain;charset=UTF-8")
+    public String alipayNotify(HttpServletRequest request) {
+        boolean ok = alipayTradeService.handleNotify(request);
+        return ok ? "success" : "fail";
+    }
+
+    /**
+     * 支付宝同步跳转（用户支付完成后回到商户，仅用于前端跳转）
+     */
+    @GetMapping("/alipay/return")
+    public void alipayReturn(HttpServletResponse response) throws IOException {
+        String url = alipayProperties.getFrontendRedirectUrl();
+        if (url == null || url.isEmpty()) {
+            url = "/";
+        }
+        response.sendRedirect(url);
     }
 
     /**
