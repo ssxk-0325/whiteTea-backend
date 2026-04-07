@@ -129,6 +129,7 @@ public class RewardController {
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) Integer type,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer status,
             HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
@@ -138,7 +139,7 @@ public class RewardController {
             jwtUtil.getUserIdFromToken(token); // 验证token有效性
 
             Page<Reward> rewardPage = new Page<>(page + 1, size);
-            IPage<Reward> result = rewardService.getAdminRewardList(rewardPage, type, keyword);
+            IPage<Reward> result = rewardService.getAdminRewardList(rewardPage, type, keyword, status);
             return Result.success(result);
         } catch (Exception e) {
             return Result.error(e.getMessage());

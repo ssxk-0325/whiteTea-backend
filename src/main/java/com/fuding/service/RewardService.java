@@ -41,7 +41,7 @@ public interface RewardService {
     /**
      * 管理员获取奖品列表（包括所有状态）
      */
-    IPage<Reward> getAdminRewardList(Page<Reward> page, Integer type, String keyword);
+    IPage<Reward> getAdminRewardList(Page<Reward> page, Integer type, String keyword, Integer status);
 
     /**
      * 管理员创建奖品

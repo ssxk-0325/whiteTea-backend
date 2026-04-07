@@ -144,11 +144,13 @@ public class RewardServiceImpl extends ServiceImpl<RewardMapper, Reward> impleme
     }
 
     @Override
-    public IPage<Reward> getAdminRewardList(Page<Reward> page, Integer type, String keyword) {
+    public IPage<Reward> getAdminRewardList(Page<Reward> page, Integer type, String keyword, Integer status) {
         LambdaQueryWrapper<Reward> wrapper = new LambdaQueryWrapper<>();
-        // 管理员可以看到所有状态的奖品
         if (type != null) {
             wrapper.eq(Reward::getType, type);
+        }
+        if (status != null) {
+            wrapper.eq(Reward::getStatus, status);
         }
         if (keyword != null && !keyword.trim().isEmpty()) {
             wrapper.like(Reward::getName, keyword);
