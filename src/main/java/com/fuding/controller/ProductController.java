@@ -3,6 +3,8 @@ package com.fuding.controller;
 import com.fuding.common.Result;
 import com.fuding.entity.OrderReview;
 import com.fuding.entity.Product;
+import com.fuding.entity.User;
+import com.fuding.mapper.UserMapper;
 import com.fuding.service.OrderReviewService;
 import com.fuding.service.ProductService;
 import com.fuding.util.JwtUtil;
@@ -29,6 +31,9 @@ public class ProductController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Autowired
     private OrderReviewService orderReviewService;
@@ -126,12 +131,23 @@ public class ProductController {
         return null;
     }
 
+    private String ensureAdmin(HttpServletRequest request) {
+        Long userId = getUserId(request);
+        if (userId == null) return "请先登录";
+        User user = userMapper.selectById(userId);
+        if (user == null) return "请先登录";
+        if (user.getUserType() == null || user.getUserType() != 1) return "无权限";
+        return null;
+    }
+
     /**
      * 添加产品（管理员）
      */
     @PostMapping("/add")
-    public Result<Product> addProduct(@RequestBody Product product) {
+    public Result<Product> addProduct(@RequestBody Product product, HttpServletRequest request) {
         try {
+            String authError = ensureAdmin(request);
+            if (authError != null) return Result.error(authError);
             Product savedProduct = productService.saveProduct(product);
             return Result.success("添加成功", savedProduct);
         } catch (Exception e) {
@@ -143,8 +159,10 @@ public class ProductController {
      * 更新产品（管理员）
      */
     @PutMapping("/update")
-    public Result<Product> updateProduct(@RequestBody Product product) {
+    public Result<Product> updateProduct(@RequestBody Product product, HttpServletRequest request) {
         try {
+            String authError = ensureAdmin(request);
+            if (authError != null) return Result.error(authError);
             Product updatedProduct = productService.updateProduct(product);
             return Result.success("更新成功", updatedProduct);
         } catch (Exception e) {
@@ -156,8 +174,10 @@ public class ProductController {
      * 删除产品（管理员）
      */
     @DeleteMapping("/{id}")
-    public Result<Void> deleteProduct(@PathVariable Long id) {
+    public Result<Void> deleteProduct(@PathVariable Long id, HttpServletRequest request) {
         try {
+            String authError = ensureAdmin(request);
+            if (authError != null) return Result.error(authError);
             productService.delete(id);
             return Result.success("删除成功", null);
         } catch (Exception e) {

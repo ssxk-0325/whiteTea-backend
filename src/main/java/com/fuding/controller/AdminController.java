@@ -7,9 +7,11 @@ import com.fuding.entity.User;
 import com.fuding.mapper.OrderMapper;
 import com.fuding.mapper.ProductMapper;
 import com.fuding.mapper.UserMapper;
+import com.fuding.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,17 +33,41 @@ public class AdminController {
     private UserMapper userMapper;
 
     @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
     private ProductMapper productMapper;
 
     @Autowired
     private OrderMapper orderMapper;
 
+    private String ensureAdmin(HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+            try {
+                Long userId = jwtUtil.getUserIdFromToken(token);
+                User user = userMapper.selectById(userId);
+                if (user != null && user.getUserType() != null && user.getUserType() == 1) {
+                    return null;
+                }
+                return "无权限";
+            } catch (Exception e) {
+                return "Token 无效";
+            }
+        }
+        return "请先登录";
+    }
+
     /**
      * 获取统计数据
      */
     @GetMapping("/stats")
-    public Result<Map<String, Object>> getStats() {
+    public Result<Map<String, Object>> getStats(HttpServletRequest request) {
         try {
+            String authError = ensureAdmin(request);
+            if (authError != null) return Result.error(authError);
+
             Map<String, Object> stats = new HashMap<>();
             
             // 总用户数
@@ -75,8 +101,11 @@ public class AdminController {
      * 获取图表数据
      */
     @GetMapping("/chart-data")
-    public Result<Map<String, Object>> getChartData() {
+    public Result<Map<String, Object>> getChartData(HttpServletRequest request) {
         try {
+            String authError = ensureAdmin(request);
+            if (authError != null) return Result.error(authError);
+
             Map<String, Object> chartData = new HashMap<>();
             
             // 1. 订单状态分布（饼图）
