@@ -4,10 +4,12 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fuding.common.Result;
 import com.fuding.entity.User;
+import com.fuding.service.CaptchaStoreService;
 import com.fuding.service.UserService;
 import com.fuding.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
@@ -26,6 +28,9 @@ public class UserController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private CaptchaStoreService captchaStoreService;
 
     /**
      * 用户注册
@@ -52,6 +57,10 @@ public class UserController {
         try {
             String username = params.get("username");
             String password = params.get("password");
+            String captchaId = params.get("captchaId");
+            String captchaCode = params.get("captchaCode");
+
+            validateCaptcha(captchaId, captchaCode);
 
             String token = userService.login(username, password);
             User user = userService.findByUsername(username);
@@ -63,6 +72,19 @@ public class UserController {
             return Result.success("登录成功", data);
         } catch (Exception e) {
             return Result.error(e.getMessage());
+        }
+    }
+
+    private void validateCaptcha(String captchaId, String captchaCode) {
+        if (!StringUtils.hasText(captchaId) || !StringUtils.hasText(captchaCode)) {
+            throw new RuntimeException("请输入验证码");
+        }
+        String expected = captchaStoreService.getAndRemove(captchaId);
+        if (!StringUtils.hasText(expected)) {
+            throw new RuntimeException("验证码已过期，请刷新后重试");
+        }
+        if (!expected.equalsIgnoreCase(captchaCode.trim())) {
+            throw new RuntimeException("验证码错误");
         }
     }
 

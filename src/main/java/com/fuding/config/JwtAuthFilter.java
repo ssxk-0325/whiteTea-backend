@@ -25,7 +25,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final List<String> PUBLIC_PATHS = Arrays.asList(
             "/user/login",
-            "/user/register"
+            "/user/register",
+            "/captcha"
     );
 
     @Autowired
