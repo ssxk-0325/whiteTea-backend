@@ -3,17 +3,21 @@ package com.fuding.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fuding.entity.CustomerServiceMessage;
 import com.fuding.entity.CustomerServiceSession;
+import com.fuding.entity.User;
 import com.fuding.mapper.CustomerServiceMessageMapper;
 import com.fuding.mapper.CustomerServiceSessionMapper;
 import com.fuding.service.AIService;
 import com.fuding.service.ChatService;
+import com.fuding.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -35,13 +39,16 @@ public class ChatServiceImpl implements ChatService {
     @Autowired
     private com.fuding.service.TagService tagService;
 
+    @Autowired
+    private UserService userService;
+
     @Override
     @Transactional
     public CustomerServiceSession createOrGetSession(Long userId) {
-        // 查找用户最近的进行中会话
+        // 查找用户最近的进行中会话（AI 进行中 或 已转人工）
         LambdaQueryWrapper<CustomerServiceSession> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(CustomerServiceSession::getUserId, userId);
-        wrapper.eq(CustomerServiceSession::getStatus, 0); // 进行中
+        wrapper.in(CustomerServiceSession::getStatus, 0, 2);
         wrapper.orderByDesc(CustomerServiceSession::getCreateTime);
         wrapper.last("LIMIT 1");
         
@@ -58,6 +65,11 @@ public class ChatServiceImpl implements ChatService {
         }
         
         return session;
+    }
+
+    @Override
+    public CustomerServiceSession getSessionById(Long sessionId) {
+        return sessionMapper.selectById(sessionId);
     }
 
     @Override
@@ -92,13 +104,20 @@ public class ChatServiceImpl implements ChatService {
     @Override
     @Transactional
     public CustomerServiceMessage processUserMessage(Long sessionId, String userMessage) {
+        CustomerServiceSession session = sessionMapper.selectById(sessionId);
+        if (session == null) {
+            throw new RuntimeException("会话不存在");
+        }
+
         // 1. 保存用户消息
         sendMessage(sessionId, userMessage, 0); // 0-用户
 
         // 1.5. 记录问题（用于Tag统计）
-        CustomerServiceSession session = sessionMapper.selectById(sessionId);
-        if (session != null) {
-            tagService.recordQuestion(userMessage, session.getUserId());
+        tagService.recordQuestion(userMessage, session.getUserId());
+
+        // 已转人工：不再调用大模型，由管理员在后台回复
+        if (Integer.valueOf(2).equals(session.getStatus())) {
+            return null;
         }
 
         // 2. 获取对话历史（最近10条）
@@ -115,7 +134,14 @@ public class ChatServiceImpl implements ChatService {
         List<String> conversationHistory = historyMessages.stream()
                 .limit(10)
                 .map(msg -> {
-                    String role = msg.getSenderType() == 0 ? "用户" : "AI";
+                    String role;
+                    if (Integer.valueOf(0).equals(msg.getSenderType())) {
+                        role = "用户";
+                    } else if (Integer.valueOf(2).equals(msg.getSenderType())) {
+                        role = "人工";
+                    } else {
+                        role = "AI";
+                    }
                     return role + ":" + msg.getContent();
                 })
                 .collect(Collectors.toList());
@@ -127,6 +153,68 @@ public class ChatServiceImpl implements ChatService {
         CustomerServiceMessage aiMessage = sendMessage(sessionId, aiReply, 1); // 1-AI
 
         return aiMessage;
+    }
+
+    @Override
+    @Transactional
+    public CustomerServiceSession transferToHuman(Long sessionId) {
+        CustomerServiceSession session = sessionMapper.selectById(sessionId);
+        if (session == null) {
+            throw new RuntimeException("会话不存在");
+        }
+        if (Integer.valueOf(1).equals(session.getStatus())) {
+            throw new RuntimeException("会话已结束，无法转人工");
+        }
+        if (Integer.valueOf(2).equals(session.getStatus())) {
+            return session;
+        }
+        session.setStatus(2);
+        session.setLastMessageTime(LocalDateTime.now());
+        sessionMapper.updateById(session);
+        sendMessage(sessionId, "已为您转接人工客服，请稍候，工作人员将尽快回复您。", 2);
+        return session;
+    }
+
+    @Override
+    public List<Map<String, Object>> getAdminSessions(Integer status) {
+        LambdaQueryWrapper<CustomerServiceSession> wrapper = new LambdaQueryWrapper<>();
+        if (status != null) {
+            wrapper.eq(CustomerServiceSession::getStatus, status);
+        } else {
+            wrapper.in(CustomerServiceSession::getStatus, 0, 2);
+        }
+        wrapper.orderByDesc(CustomerServiceSession::getLastMessageTime);
+        List<CustomerServiceSession> sessions = sessionMapper.selectList(wrapper);
+        return sessions.stream().map(s -> {
+            Map<String, Object> item = new HashMap<>();
+            item.put("session", s);
+            try {
+                User u = userService.findById(s.getUserId());
+                if (u != null) {
+                    u.setPassword(null);
+                }
+                item.put("user", u);
+            } catch (Exception e) {
+                item.put("user", null);
+            }
+            return item;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public CustomerServiceMessage adminReply(Long sessionId, String content) {
+        CustomerServiceSession session = sessionMapper.selectById(sessionId);
+        if (session == null) {
+            throw new RuntimeException("会话不存在");
+        }
+        if (Integer.valueOf(1).equals(session.getStatus())) {
+            throw new RuntimeException("会话已结束，无法回复");
+        }
+        if (!Integer.valueOf(2).equals(session.getStatus())) {
+            transferToHuman(sessionId);
+        }
+        return sendMessage(sessionId, content.trim(), 2);
     }
 
     @Override
