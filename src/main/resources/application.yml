@@ -66,17 +66,18 @@ mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.fuding.entity
 
-# AI API配置
+# AI API配置（默认：智谱 AI BigModel，OpenAI 兼容 Chat Completions）
+# Java 示例与端点说明：https://docs.bigmodel.cn/cn/guide/models/text/glm-4#java
 ai:
   api:
-    # 千帆（Qianfan）V2 Chat Completions（OpenAI风格）
-    # 文档：https://cloud.baidu.com/doc/qianfan-api/s/ym9chdsy5
-    url: https://qianfan.baidubce.com/v2/chat/completions
-    # API Key请使用环境变量/密钥管理，不要明文写入仓库
-    key: bce-v3/ALTAK-PZI1EXJ5JORWWM7Odnrf8/a7b00571b007d3af0ffc9de63b7e7eac485a6af0 # ${QIANFAN_API_KEY:}
-    # qianfan返回为OpenAI风格choices结构，使用openai解析逻辑即可
-    type: qianfan # qianfan(千帆V2), wenxin(旧文心), tongyi(通义千问), openai(OpenAI兼容)
-    model: ernie-3.5-8k # 例如：ernie-3.5-8k
+    # 须为完整 chat/completions 地址（文档 cURL 示例）
+    url: https://open.bigmodel.cn/api/paas/v4/chat/completions
+    # 在环境变量或 IDE 运行配置中设置 ZHIPU_API_KEY，勿将密钥提交到仓库
+    key: 309cb33e734a4881a119607a7a4d0d38.B9qCx6qVrM1rIt8B
+    # zhipu / glm：智谱；qianfan：千帆；openai：任意 OpenAI 兼容网关
+    type: zhipu
+    # 例如：glm-4-plus、glm-4-flash、glm-4-air-250414（见智谱模型列表）
+    model: glm-4-flash
 
 # 日志配置
 logging:

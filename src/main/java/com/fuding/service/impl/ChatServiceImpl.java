@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -101,8 +102,17 @@ public class ChatServiceImpl implements ChatService {
         }
 
         // 2. 获取对话历史（最近10条）
+        // 注意：getMessages 已包含刚写入的当前用户消息，若再与 userMessage 拼接会重复一条 user，部分大模型会返回异常或空正文
         List<CustomerServiceMessage> recentMessages = getMessages(sessionId);
-        List<String> conversationHistory = recentMessages.stream()
+        List<CustomerServiceMessage> historyMessages = new ArrayList<>(recentMessages);
+        if (!historyMessages.isEmpty()) {
+            CustomerServiceMessage last = historyMessages.get(historyMessages.size() - 1);
+            if (Integer.valueOf(0).equals(last.getSenderType())
+                    && userMessage != null && userMessage.equals(last.getContent())) {
+                historyMessages.remove(historyMessages.size() - 1);
+            }
+        }
+        List<String> conversationHistory = historyMessages.stream()
                 .limit(10)
                 .map(msg -> {
                     String role = msg.getSenderType() == 0 ? "用户" : "AI";

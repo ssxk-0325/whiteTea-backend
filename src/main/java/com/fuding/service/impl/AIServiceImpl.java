@@ -1,6 +1,7 @@
 package com.fuding.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.fuding.service.AIService;
 import org.apache.http.HttpEntity;
@@ -36,7 +37,7 @@ public class AIServiceImpl implements AIService {
     @Value("${ai.api.key:}")
     private String aiApiKey;
 
-    @Value("${ai.api.type:wenxin}") // wenxin, tongyi, openai
+    @Value("${ai.api.type:wenxin}") // zhipu, qianfan, openai, wenxin, tongyi
     private String aiApiType;
 
     @Value("${ai.api.model:}")
@@ -60,6 +61,11 @@ public class AIServiceImpl implements AIService {
         try {
             // 根据配置的API类型调用不同的接口
             switch (aiApiType.toLowerCase()) {
+                case "zhipu":
+                case "glm":
+                    // 智谱 BigModel OpenAI 兼容 Chat Completions（choices[0].message.content）
+                    // 文档：https://docs.bigmodel.cn/cn/guide/models/text/glm-4#java
+                    return callOpenAIAPI(userMessage, conversationHistory, systemPrompt);
                 case "qianfan":
                     // 千帆V2 Chat Completions为OpenAI风格返回（choices[0].message.content）
                     return callOpenAIAPI(userMessage, conversationHistory, systemPrompt);
@@ -79,22 +85,84 @@ public class AIServiceImpl implements AIService {
         }
     }
 
+    /**
+     * 解析 OpenAI / 千帆 V2 兼容返回体中的 assistant 文本。
+     * 千帆有时会把 content 以数组等形式返回，或字段略有差异，这里做兼容。
+     */
     private String parseOpenAIStyleContent(JSONObject jsonResponse) {
         try {
-            if (jsonResponse == null) return null;
-            if (jsonResponse.containsKey("choices") && jsonResponse.getJSONArray("choices") != null
-                    && jsonResponse.getJSONArray("choices").size() > 0) {
-                JSONObject choice = jsonResponse.getJSONArray("choices").getJSONObject(0);
-                if (choice == null) return null;
-                JSONObject message = choice.getJSONObject("message");
-                if (message != null && message.containsKey("content")) {
-                    return message.getString("content");
+            if (jsonResponse == null) {
+                return null;
+            }
+            if (jsonResponse.containsKey("error")) {
+                logger.warn("AI返回包含 error 字段：{}", jsonResponse.get("error"));
+                return null;
+            }
+            JSONArray choices = jsonResponse.getJSONArray("choices");
+            if (choices == null || choices.isEmpty()) {
+                return null;
+            }
+            JSONObject choice = choices.getJSONObject(0);
+            if (choice == null) {
+                return null;
+            }
+            // 非流式：message.content
+            JSONObject message = choice.getJSONObject("message");
+            if (message != null) {
+                String fromMessage = extractTextContent(message.get("content"));
+                if (fromMessage != null && !fromMessage.trim().isEmpty()) {
+                    return fromMessage;
                 }
             }
-        } catch (Exception ignore) {
-            // 解析失败则返回null，由上层兜底
+            // 流式兼容：delta.content
+            JSONObject delta = choice.getJSONObject("delta");
+            if (delta != null) {
+                String fromDelta = extractTextContent(delta.get("content"));
+                if (fromDelta != null && !fromDelta.trim().isEmpty()) {
+                    return fromDelta;
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("解析OpenAI风格响应失败：{}", e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * content 可能是 String、JSONArray（多段文本）、或带 type/text 的对象数组
+     */
+    private String extractTextContent(Object contentNode) {
+        if (contentNode == null) {
+            return null;
+        }
+        if (contentNode instanceof String) {
+            return (String) contentNode;
+        }
+        if (contentNode instanceof JSONArray) {
+            JSONArray arr = (JSONArray) contentNode;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < arr.size(); i++) {
+                Object item = arr.get(i);
+                if (item instanceof String) {
+                    sb.append((String) item);
+                } else if (item instanceof JSONObject) {
+                    JSONObject o = (JSONObject) item;
+                    if (o.containsKey("text")) {
+                        sb.append(o.getString("text"));
+                    } else if (o.containsKey("content")) {
+                        sb.append(o.getString("content"));
+                    }
+                }
+            }
+            return sb.length() > 0 ? sb.toString() : null;
+        }
+        if (contentNode instanceof JSONObject) {
+            JSONObject o = (JSONObject) contentNode;
+            if (o.containsKey("text")) {
+                return o.getString("text");
+            }
+        }
+        return contentNode.toString();
     }
 
     /**
@@ -230,21 +298,76 @@ public class AIServiceImpl implements AIService {
                 httpPost.setEntity(entity);
 
                 try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                    int statusCode = response.getStatusLine().getStatusCode();
                     HttpEntity responseEntity = response.getEntity();
                     String responseBody = EntityUtils.toString(responseEntity, StandardCharsets.UTF_8);
+                    logger.info("OpenAI兼容接口(type={}) HTTP {}，响应长度={}", aiApiType, statusCode,
+                            responseBody != null ? responseBody.length() : 0);
 
-                    JSONObject jsonResponse = JSON.parseObject(responseBody);
+                    JSONObject jsonResponse = null;
+                    try {
+                        jsonResponse = JSON.parseObject(responseBody);
+                    } catch (Exception parseEx) {
+                        logger.warn("AI响应不是合法JSON：" + truncateForLog(responseBody, 800), parseEx);
+                    }
                     String content = parseOpenAIStyleContent(jsonResponse);
                     if (content != null && !content.trim().isEmpty()) {
                         return content;
                     }
+                    // 千帆/OpenAI 兼容接口在鉴权、欠费、限流等场景会返回 error 对象而非 choices
+                    String apiErr = formatOpenAiCompatibleError(jsonResponse, statusCode);
+                    if (apiErr != null) {
+                        return apiErr;
+                    }
+                    // 部分成功响应但正文为空：记录片段便于排查（避免误以为“没调千帆”）
+                    logger.warn("AI响应未能解析出正文，HTTP={}，body片段={}", statusCode, truncateForLog(responseBody, 1200));
                 }
             }
+            logger.warn("AI调用未得到有效正文，已回退本地模板回复。userMessage={}", truncateForLog(userMessage, 200));
             return getMockReply(userMessage);
         } catch (Exception e) {
             logger.error("调用OpenAI API异常：", e);
             return getMockReply(userMessage);
         }
+    }
+
+    /**
+     * 将千帆/OpenAI 兼容错误体转换为用户可见说明，避免与本地 mock 混淆。
+     */
+    private String formatOpenAiCompatibleError(JSONObject json, int statusCode) {
+        if (json != null && json.containsKey("error")) {
+            Object errObj = json.get("error");
+            if (errObj instanceof JSONObject) {
+                JSONObject err = (JSONObject) errObj;
+                String code = err.getString("code");
+                String message = err.getString("message");
+                if ("account_overdue".equals(code)) {
+                    return "智能客服暂时不可用：百度千帆账号欠费或服务已到期，请到百度智能云控制台续费或充值后再试。";
+                }
+                if (message != null && !message.trim().isEmpty()) {
+                    String prefix = "智能客服暂时不可用";
+                    if (code != null && !code.trim().isEmpty()) {
+                        prefix += "（" + code + "）";
+                    }
+                    return prefix + "：" + message.trim();
+                }
+            } else if (errObj != null) {
+                return "智能客服暂时不可用：" + errObj;
+            }
+        }
+        if (statusCode >= 400) {
+            return "智能客服暂时不可用：服务返回 HTTP " + statusCode
+                    + "，请稍后重试或联系管理员检查大模型密钥与账户状态。";
+        }
+        return null;
+    }
+
+    private String truncateForLog(String s, int max) {
+        if (s == null) {
+            return "";
+        }
+        String t = s.replace("\r", " ").replace("\n", " ");
+        return t.length() <= max ? t : t.substring(0, max) + "...";
     }
 
     /**
