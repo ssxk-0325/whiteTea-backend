@@ -7,6 +7,7 @@ import com.fuding.entity.OrderItem;
 import com.fuding.entity.OrderReview;
 import com.fuding.mapper.OrderItemMapper;
 import com.fuding.service.AlipayTradeService;
+import com.fuding.service.DeliveryTrackService;
 import com.fuding.service.OrderReviewService;
 import com.fuding.service.OrderService;
 import com.fuding.util.JwtUtil;
@@ -41,6 +42,9 @@ public class OrderController {
 
     @Autowired
     private OrderReviewService orderReviewService;
+
+    @Autowired
+    private DeliveryTrackService deliveryTrackService;
 
     @Autowired
     private AlipayTradeService alipayTradeService;
@@ -141,6 +145,33 @@ public class OrderController {
             String content = params.get("content") != null ? params.get("content").toString() : null;
             OrderReview review = orderReviewService.createReview(userId, id, rating, content);
             return Result.success("评价成功", review);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 同城配送模拟轨迹：发货后展示与收货点的直线距离，最多 5 次位置变化后送达（演示数据）
+     */
+    @GetMapping("/{id}/delivery-track")
+    public Result<Map<String, Object>> getDeliveryTrack(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+
+            Order order = orderService.getOrderById(id);
+            if (!order.getUserId().equals(userId)) {
+                return Result.error("无权访问该订单");
+            }
+
+            Map<String, Object> track = deliveryTrackService.buildDeliveryTrack(order);
+            if (track == null) {
+                return Result.success("无配送轨迹", null);
+            }
+            return Result.success(track);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -433,6 +464,23 @@ public class OrderController {
         try {
             orderService.shipOrder(id);
             return Result.success("发货成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理后台：配送模拟轨迹（与前台逻辑一致）
+     */
+    @GetMapping("/admin/{id}/delivery-track")
+    public Result<Map<String, Object>> adminGetDeliveryTrack(@PathVariable Long id) {
+        try {
+            Order order = orderService.getOrderById(id);
+            Map<String, Object> track = deliveryTrackService.buildDeliveryTrack(order);
+            if (track == null) {
+                return Result.success("无配送轨迹", null);
+            }
+            return Result.success(track);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
