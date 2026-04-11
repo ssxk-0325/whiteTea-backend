@@ -310,6 +310,24 @@ public class OrderController {
     }
 
     /**
+     * 主动查询支付宝订单并补单（内网穿透地址变更导致异步通知未送达时使用）
+     */
+    @PostMapping("/{id}/alipay/sync")
+    public Result<Void> alipaySyncPayStatus(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            alipayTradeService.syncPayStatusFromAlipay(userId, id);
+            return Result.success("已同步支付状态", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
      * 支付宝异步通知（验签成功后更新订单）
      */
     @PostMapping(value = "/alipay/notify", produces = "text/plain;charset=UTF-8")

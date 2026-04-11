@@ -17,4 +17,9 @@ public interface AlipayTradeService {
      * @return true 表示处理成功，应回复支付宝 success
      */
     boolean handleNotify(HttpServletRequest request);
+
+    /**
+     * 主动查询支付宝交易状态；若已支付则与异步通知一致地更新本地订单（用于 notify 未送达等场景）
+     */
+    void syncPayStatusFromAlipay(Long userId, Long orderId);
 }

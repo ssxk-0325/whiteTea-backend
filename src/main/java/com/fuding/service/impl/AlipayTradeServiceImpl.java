@@ -5,7 +5,9 @@ import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.api.request.AlipayTradePagePayRequest;
+import com.alipay.api.request.AlipayTradeQueryRequest;
 import com.alipay.api.response.AlipayTradePagePayResponse;
+import com.alipay.api.response.AlipayTradeQueryResponse;
 import com.fuding.config.AlipayProperties;
 import com.fuding.entity.Order;
 import com.fuding.service.AlipayTradeService;
@@ -140,6 +142,54 @@ public class AlipayTradeServiceImpl implements AlipayTradeService {
         } catch (Exception e) {
             log.error("处理支付宝通知更新订单失败", e);
             return false;
+        }
+    }
+
+    @Override
+    public void syncPayStatusFromAlipay(Long userId, Long orderId) {
+        if (!alipayProperties.isEnabled() || alipayClient == null) {
+            throw new RuntimeException("支付宝支付未启用，请在 application.yml 中配置 alipay.enabled=true 及密钥");
+        }
+        Order order = orderService.getOrderById(orderId);
+        if (!order.getUserId().equals(userId)) {
+            throw new RuntimeException("无权操作该订单");
+        }
+        if (order.getStatus() != null && order.getStatus() != 0) {
+            return;
+        }
+
+        try {
+            AlipayTradeQueryRequest request = new AlipayTradeQueryRequest();
+            JSONObject biz = new JSONObject();
+            biz.put("out_trade_no", order.getOrderNo());
+            request.setBizContent(biz.toJSONString());
+            AlipayTradeQueryResponse response = alipayClient.execute(request);
+            if (response == null) {
+                throw new RuntimeException("支付宝查询无响应");
+            }
+            if (!response.isSuccess()) {
+                String msg = response.getSubMsg() != null ? response.getSubMsg() : response.getMsg();
+                throw new RuntimeException("查询支付宝失败：" + (msg != null ? msg : "未知错误"));
+            }
+            String tradeStatus = response.getTradeStatus();
+            if (tradeStatus == null) {
+                throw new RuntimeException("支付宝未返回交易状态");
+            }
+            if ("TRADE_SUCCESS".equals(tradeStatus) || "TRADE_FINISHED".equals(tradeStatus)) {
+                String totalAmount = response.getTotalAmount();
+                if (totalAmount == null || totalAmount.isEmpty()) {
+                    throw new RuntimeException("支付宝未返回实付金额");
+                }
+                orderService.payOrderFromAlipayNotify(order.getOrderNo(), totalAmount);
+                return;
+            }
+            if ("WAIT_BUYER_PAY".equals(tradeStatus)) {
+                throw new RuntimeException("支付宝侧订单尚未支付，请先完成支付");
+            }
+            throw new RuntimeException("支付宝交易状态为 " + tradeStatus + "，无法同步为已支付");
+        } catch (AlipayApiException e) {
+            log.error("支付宝 trade.query 失败", e);
+            throw new RuntimeException("支付宝查询失败：" + e.getMessage());
         }
     }
 }
