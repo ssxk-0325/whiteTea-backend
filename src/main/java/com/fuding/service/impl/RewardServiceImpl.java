@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,8 +102,11 @@ public class RewardServiceImpl extends ServiceImpl<RewardMapper, Reward> impleme
         exchange.setPointsUsed(reward.getPointsRequired());
         exchange.setStatus(0); // 待处理
 
-        // 如果是虚拟奖品，生成兑换码
-        if (reward.getType() == 3) {
+        // 虚拟奖品、积分商城优惠券：生成兑换码（优惠券用于下单抵扣时展示券码）
+        if (reward.getType() == 2) {
+            exchange.setStatus(1);
+            exchange.setExchangeCode(generateExchangeCode());
+        } else if (reward.getType() == 3) {
             exchange.setExchangeCode(generateExchangeCode());
         }
 
@@ -117,6 +121,32 @@ public class RewardServiceImpl extends ServiceImpl<RewardMapper, Reward> impleme
         wrapper.eq(RewardExchange::getUserId, userId);
         wrapper.orderByDesc(RewardExchange::getCreateTime);
         return exchangeMapper.selectList(wrapper);
+    }
+
+    @Override
+    public List<Map<String, Object>> listCheckoutCoupons(Long userId) {
+        LambdaQueryWrapper<RewardExchange> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RewardExchange::getUserId, userId);
+        wrapper.isNull(RewardExchange::getOrderId);
+        wrapper.and(w -> w.ne(RewardExchange::getStatus, 2).or().isNull(RewardExchange::getStatus));
+        wrapper.orderByDesc(RewardExchange::getCreateTime);
+        List<RewardExchange> exchanges = exchangeMapper.selectList(wrapper);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (RewardExchange ex : exchanges) {
+            Reward r = rewardMapper.selectById(ex.getRewardId());
+            if (r == null || r.getType() == null || r.getType() != 2) {
+                continue;
+            }
+            Map<String, Object> row = new HashMap<>();
+            row.put("id", ex.getId());
+            row.put("couponName", r.getName());
+            String code = ex.getExchangeCode();
+            row.put("couponCode", code != null ? code : "");
+            int discountRule = r.getCouponDiscountType() != null ? r.getCouponDiscountType() : 1;
+            row.put("couponType", discountRule);
+            result.add(row);
+        }
+        return result;
     }
 
     @Override
@@ -172,6 +202,12 @@ public class RewardServiceImpl extends ServiceImpl<RewardMapper, Reward> impleme
         reward.setStatus(params.get("status") != null ? Integer.valueOf(params.get("status").toString()) : 1);
         reward.setSortOrder(params.get("sortOrder") != null ? Integer.valueOf(params.get("sortOrder").toString()) : 0);
         reward.setTotalExchanged(0);
+        if (reward.getType() != null && reward.getType() == 2) {
+            reward.setCouponDiscountType(
+                    params.get("couponDiscountType") != null
+                            ? Integer.valueOf(params.get("couponDiscountType").toString())
+                            : 1);
+        }
 
         rewardMapper.insert(reward);
         return reward;
@@ -208,6 +244,11 @@ public class RewardServiceImpl extends ServiceImpl<RewardMapper, Reward> impleme
         }
         if (params.get("sortOrder") != null) {
             reward.setSortOrder(Integer.valueOf(params.get("sortOrder").toString()));
+        }
+        if (params.get("couponDiscountType") != null) {
+            reward.setCouponDiscountType(Integer.valueOf(params.get("couponDiscountType").toString()));
+        } else if (reward.getType() != null && reward.getType() != 2) {
+            reward.setCouponDiscountType(null);
         }
 
         rewardMapper.updateById(reward);

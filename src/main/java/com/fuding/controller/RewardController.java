@@ -47,9 +47,9 @@ public class RewardController {
     }
 
     /**
-     * 获取奖品详情
+     * 获取奖品详情（仅数字 id，避免与 /checkout-coupons 等路径冲突）
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public Result<Reward> getRewardDetail(@PathVariable Long id) {
         try {
             Reward reward = rewardService.getRewardById(id);
@@ -62,7 +62,7 @@ public class RewardController {
     /**
      * 兑换奖品
      */
-    @PostMapping("/{id}/exchange")
+    @PostMapping("/{id:\\d+}/exchange")
     public Result<RewardExchange> exchangeReward(
             @PathVariable Long id,
             HttpServletRequest request) {
@@ -113,6 +113,24 @@ public class RewardController {
 
             Map<String, Object> info = rewardService.getUserPointsInfo(userId);
             return Result.success(info);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 结算可选优惠券：积分商城兑换的「优惠券」类奖品，未用于订单抵扣的记录
+     */
+    @GetMapping("/checkout-coupons")
+    public Result<List<Map<String, Object>>> listCheckoutCoupons(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            List<Map<String, Object>> list = rewardService.listCheckoutCoupons(userId);
+            return Result.success(list);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

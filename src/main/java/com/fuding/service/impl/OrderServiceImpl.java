@@ -8,7 +8,8 @@ import com.fuding.entity.Order;
 import com.fuding.entity.OrderItem;
 import com.fuding.entity.Product;
 import com.fuding.entity.Store;
-import com.fuding.entity.UserActivityCoupon;
+import com.fuding.entity.Reward;
+import com.fuding.entity.RewardExchange;
 import com.fuding.entity.User;
 import com.fuding.mapper.AddressMapper;
 import com.fuding.mapper.CartMapper;
@@ -16,7 +17,8 @@ import com.fuding.mapper.OrderItemMapper;
 import com.fuding.mapper.OrderMapper;
 import com.fuding.mapper.ProductMapper;
 import com.fuding.mapper.StoreMapper;
-import com.fuding.mapper.UserActivityCouponMapper;
+import com.fuding.mapper.RewardExchangeMapper;
+import com.fuding.mapper.RewardMapper;
 import com.fuding.mapper.UserMapper;
 import com.fuding.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +60,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private AddressMapper addressMapper;
 
     @Autowired
-    private UserActivityCouponMapper userActivityCouponMapper;
+    private RewardExchangeMapper rewardExchangeMapper;
+
+    @Autowired
+    private RewardMapper rewardMapper;
 
     @Override
     public Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark, List<Long> cartIds, Long couponId, Integer orderMode) {
@@ -155,19 +160,25 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         BigDecimal wholesaleDiscountAmount = totalAmount.multiply(wholesaleRate).setScale(2, RoundingMode.HALF_UP);
 
         BigDecimal couponDiscountAmount = BigDecimal.ZERO;
-        UserActivityCoupon coupon = null;
+        RewardExchange mallCouponExchange = null;
+        Reward mallCouponReward = null;
         if (couponId != null) {
-            coupon = userActivityCouponMapper.selectById(couponId);
-            if (coupon == null || !coupon.getUserId().equals(userId)) {
+            mallCouponExchange = rewardExchangeMapper.selectById(couponId);
+            if (mallCouponExchange == null || !mallCouponExchange.getUserId().equals(userId)) {
                 throw new RuntimeException("优惠券不存在");
             }
-            if (coupon.getStatus() != null && coupon.getStatus() != 0) {
-                throw new RuntimeException("优惠券不可用");
+            if (mallCouponExchange.getOrderId() != null) {
+                throw new RuntimeException("该优惠券已使用");
             }
-            if (coupon.getExpireTime() != null && LocalDateTime.now().isAfter(coupon.getExpireTime())) {
-                throw new RuntimeException("优惠券已过期");
+            if (mallCouponExchange.getStatus() != null && mallCouponExchange.getStatus() == 2) {
+                throw new RuntimeException("优惠券已取消");
             }
-            couponDiscountAmount = calculateCouponDiscount(coupon.getCouponType(), totalAmount);
+            mallCouponReward = rewardMapper.selectById(mallCouponExchange.getRewardId());
+            if (mallCouponReward == null || mallCouponReward.getType() == null || mallCouponReward.getType() != 2) {
+                throw new RuntimeException("仅支持使用积分商城兑换的优惠券");
+            }
+            Integer rule = mallCouponReward.getCouponDiscountType() != null ? mallCouponReward.getCouponDiscountType() : 1;
+            couponDiscountAmount = calculateCouponDiscount(rule, totalAmount);
         }
 
         BigDecimal discountAmount = groupDiscountAmount.add(wholesaleDiscountAmount).add(couponDiscountAmount);
@@ -192,9 +203,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setCouponDiscountAmount(couponDiscountAmount);
         order.setDiscountAmount(discountAmount);
         order.setRewardPoints(rewardPoints);
-        if (coupon != null) {
-            order.setCouponId(coupon.getId());
-            order.setCouponCode(coupon.getCouponCode());
+        if (mallCouponExchange != null) {
+            order.setCouponId(mallCouponExchange.getId());
+            String code = mallCouponExchange.getExchangeCode();
+            order.setCouponCode(code != null ? code : "");
         }
 
         // 保存订单
@@ -224,10 +236,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 仅删除已下单的购物车项
         cartMapper.delete(cartWrapper);
 
-        if (coupon != null) {
-            coupon.setStatus(1);
-            coupon.setUseTime(LocalDateTime.now());
-            userActivityCouponMapper.updateById(coupon);
+        if (mallCouponExchange != null) {
+            mallCouponExchange.setOrderId(order.getId());
+            rewardExchangeMapper.updateById(mallCouponExchange);
         }
 
         return order;

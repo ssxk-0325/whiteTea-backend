@@ -55,5 +55,11 @@ public class RewardExchange extends BaseEntity {
      */
     @TableField("remark")
     private String remark;
+
+    /**
+     * 使用该兑换券抵扣的订单ID（积分商城优惠券下单核销后写入）
+     */
+    @TableField("order_id")
+    private Long orderId;
 }
 

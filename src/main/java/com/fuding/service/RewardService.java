@@ -34,6 +34,11 @@ public interface RewardService {
     List<RewardExchange> getUserExchanges(Long userId);
 
     /**
+     * 结算页可选：用户已兑换且未下单核销的积分商城优惠券（Reward.type=2）
+     */
+    List<Map<String, Object>> listCheckoutCoupons(Long userId);
+
+    /**
      * 获取用户的积分信息
      */
     Map<String, Object> getUserPointsInfo(Long userId);

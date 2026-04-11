@@ -57,6 +57,12 @@ public class Reward extends BaseEntity {
     private Integer type = 1;
 
     /**
+     * 优惠券面额规则（仅 type=2 有效，与订单抵扣计算一致）：1 减20元 2 减30元 3 减50元 4 减80元 5 减5% 6 减12%
+     */
+    @TableField("coupon_discount_type")
+    private Integer couponDiscountType;
+
+    /**
      * 状态：0-下架，1-上架
      */
     @TableField("status")
