@@ -159,15 +159,45 @@ public class CommunityServiceImpl extends ServiceImpl<CommunityPostMapper, Commu
         return result;
     }
 
+    /** 用户类型 1 = 管理员，与 User 实体约定一致 */
+    private boolean isAdmin(Long userId) {
+        if (userId == null) {
+            return false;
+        }
+        User u = userMapper.selectById(userId);
+        return u != null && u.getUserType() != null && u.getUserType() == 1;
+    }
+
+    /** 删除帖子关联的评论、点赞、点踩、收藏（逻辑删除） */
+    private void removePostRelations(Long postId) {
+        LambdaQueryWrapper<CommunityComment> cw = new LambdaQueryWrapper<>();
+        cw.eq(CommunityComment::getPostId, postId);
+        commentMapper.delete(cw);
+
+        LambdaQueryWrapper<CommunityPostLike> lw = new LambdaQueryWrapper<>();
+        lw.eq(CommunityPostLike::getPostId, postId);
+        likeMapper.delete(lw);
+
+        LambdaQueryWrapper<CommunityPostDislike> dw = new LambdaQueryWrapper<>();
+        dw.eq(CommunityPostDislike::getPostId, postId);
+        dislikeMapper.delete(dw);
+
+        LambdaQueryWrapper<CommunityPostFavorite> fw = new LambdaQueryWrapper<>();
+        fw.eq(CommunityPostFavorite::getPostId, postId);
+        favoriteMapper.delete(fw);
+    }
+
     @Override
     public void deletePost(Long postId, Long userId) {
         CommunityPost post = postMapper.selectById(postId);
         if (post == null) {
             throw new RuntimeException("帖子不存在");
         }
-        if (!post.getUserId().equals(userId)) {
+        boolean owner = post.getUserId().equals(userId);
+        if (!owner && !isAdmin(userId)) {
             throw new RuntimeException("无权删除该帖子");
         }
+        removePostRelations(postId);
         postMapper.deleteById(postId);
     }
 
@@ -257,14 +287,26 @@ public class CommunityServiceImpl extends ServiceImpl<CommunityPostMapper, Commu
         if (comment == null) {
             throw new RuntimeException("评论不存在");
         }
-        if (!comment.getUserId().equals(userId)) {
+        boolean owner = comment.getUserId().equals(userId);
+        if (!owner && !isAdmin(userId)) {
             throw new RuntimeException("无权删除该评论");
         }
 
-        // 更新帖子评论数
+        // 更新帖子评论数：删除顶层评论时同时删除其下所有回复
+        int dec = 1;
+        Long parentId = comment.getParentId();
+        if (parentId == null || parentId == 0L) {
+            LambdaQueryWrapper<CommunityComment> rw = new LambdaQueryWrapper<>();
+            rw.eq(CommunityComment::getParentId, commentId);
+            Long replyCount = commentMapper.selectCount(rw);
+            int n = replyCount != null ? replyCount.intValue() : 0;
+            commentMapper.delete(rw);
+            dec = 1 + n;
+        }
+
         CommunityPost post = postMapper.selectById(comment.getPostId());
         if (post != null) {
-            post.setCommentCount(Math.max(0, post.getCommentCount() - 1));
+            post.setCommentCount(Math.max(0, post.getCommentCount() - dec));
             postMapper.updateById(post);
         }
 
