@@ -87,7 +87,7 @@ public class ActivityController {
     }
 
     /**
-     * 获取我的券包
+     * 获取个人券包
      */
     @GetMapping("/coupons")
     public Result<List<UserActivityCoupon>> getMyCoupons(

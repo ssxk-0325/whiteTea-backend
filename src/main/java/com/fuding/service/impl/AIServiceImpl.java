@@ -377,7 +377,7 @@ public class AIServiceImpl implements AIService {
         String lowerMessage = userMessage.toLowerCase();
         
         if (lowerMessage.contains("订单") || lowerMessage.contains("发货")) {
-            return "关于订单问题，您可以在\"我的订单\"页面查看订单状态。如果订单已支付，通常会在48小时内发货。";
+            return "关于订单问题，您可以在\"个人订单\"页面查看订单状态。如果订单已支付，通常会在48小时内发货。";
         } else if (lowerMessage.contains("价格") || lowerMessage.contains("多少钱")) {
             return "我们的产品价格因品种和规格而异，您可以在产品详情页查看具体价格。如有优惠活动，我们会及时通知。";
         } else if (lowerMessage.contains("支付") || lowerMessage.contains("付款")) {
