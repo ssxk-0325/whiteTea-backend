@@ -129,7 +129,7 @@ public class ActivityController {
     }
 
     /**
-     * 产业服务：我要加入（采摘招募/批发与培训，type=5/6）
+     * 产业服务：申请加入（采摘招募/批发与培训，type=5/6）
      */
     @PostMapping("/{id}/join")
     public Result<IndustryApplication> joinIndustry(@PathVariable Long id,
