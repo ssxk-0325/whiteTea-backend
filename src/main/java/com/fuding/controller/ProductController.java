@@ -100,7 +100,7 @@ public class ProductController {
     }
 
     /**
-     * 猜你喜欢：为当前登录用户推荐产品
+     * 个性化推荐：为当前登录用户推荐产品
      */
     @GetMapping("/recommend")
     public Result<List<Product>> getRecommendProducts(

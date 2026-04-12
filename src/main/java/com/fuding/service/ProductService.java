@@ -42,7 +42,7 @@ public interface ProductService {
     Page<Product> findHotProducts(Pageable pageable);
 
     /**
-     * 为指定用户推荐产品（猜你喜欢）
+     * 为指定用户推荐产品（个性化推荐）
      */
     List<Product> recommendForUser(Long userId, Integer limit);
 }
