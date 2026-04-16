@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     private BrowseHistoryMapper browseHistoryMapper;
 
     @Override
-    public org.springframework.data.domain.Page<Product> findProducts(Pageable pageable, Long categoryId, String keyword) {
+    public org.springframework.data.domain.Page<Product> findProducts(Pageable pageable, Long categoryId, String keyword, BigDecimal minPrice, BigDecimal maxPrice) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Product::getStatus, 1);
         
@@ -50,6 +51,20 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         
         if (keyword != null && !keyword.trim().isEmpty()) {
             wrapper.like(Product::getName, keyword);
+        }
+
+        BigDecimal lo = minPrice;
+        BigDecimal hi = maxPrice;
+        if (lo != null && hi != null && lo.compareTo(hi) > 0) {
+            BigDecimal t = lo;
+            lo = hi;
+            hi = t;
+        }
+        if (lo != null) {
+            wrapper.ge(Product::getPrice, lo);
+        }
+        if (hi != null) {
+            wrapper.le(Product::getPrice, hi);
         }
         
         wrapper.orderByDesc(Product::getCreateTime);

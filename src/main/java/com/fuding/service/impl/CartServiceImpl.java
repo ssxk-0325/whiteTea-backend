@@ -50,11 +50,11 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
         
         if (existingCart != null) {
             // 如果恢复了记录，数量从0开始；否则累加
-            if (restored > 0) {
-                existingCart.setQuantity(quantity);
-            } else {
-                existingCart.setQuantity(existingCart.getQuantity() + quantity);
+            int newQty = restored > 0 ? quantity : existingCart.getQuantity() + quantity;
+            if (newQty > product.getStock()) {
+                throw new RuntimeException("库存不足");
             }
+            existingCart.setQuantity(newQty);
             existingCart.setSelected(1); // 恢复时设置为选中
             cartMapper.updateById(existingCart);
             return existingCart;
