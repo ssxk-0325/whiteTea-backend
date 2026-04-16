@@ -56,6 +56,6 @@ public interface OrderService {
     /**
      * 获取所有订单列表（管理后台使用）
      */
-    List<Order> getAllOrders(Integer status);
+    List<Order> getAllOrders(Integer status, String keyword, Long userId);
 }
 

@@ -68,9 +68,12 @@ public class CommunityServiceImpl extends ServiceImpl<CommunityPostMapper, Commu
     }
 
     @Override
-    public IPage<Map<String, Object>> getPostList(Page<CommunityPost> page, Integer type, String keyword) {
+    public IPage<Map<String, Object>> getPostList(Page<CommunityPost> page, Integer type, String keyword, Long postId) {
         LambdaQueryWrapper<CommunityPost> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(CommunityPost::getStatus, 1); // 只查询已发布的
+        if (postId != null) {
+            wrapper.eq(CommunityPost::getId, postId);
+        }
         if (type != null) {
             wrapper.eq(CommunityPost::getType, type);
         }

@@ -81,6 +81,42 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     }
 
     @Override
+    public org.springframework.data.domain.Page<Product> findProductsForAdmin(Pageable pageable, Long categoryId, String keyword,
+                                                                               Integer status, BigDecimal minPrice, BigDecimal maxPrice) {
+        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+        if (status != null) {
+            wrapper.eq(Product::getStatus, status);
+        }
+        if (categoryId != null && categoryId > 0) {
+            wrapper.eq(Product::getCategoryId, categoryId);
+        }
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            wrapper.like(Product::getName, keyword);
+        }
+        BigDecimal lo = minPrice;
+        BigDecimal hi = maxPrice;
+        if (lo != null && hi != null && lo.compareTo(hi) > 0) {
+            BigDecimal t = lo;
+            lo = hi;
+            hi = t;
+        }
+        if (lo != null) {
+            wrapper.ge(Product::getPrice, lo);
+        }
+        if (hi != null) {
+            wrapper.le(Product::getPrice, hi);
+        }
+        wrapper.orderByDesc(Product::getCreateTime);
+        Page<Product> page = new Page<>(pageable.getPageNumber() + 1, pageable.getPageSize());
+        IPage<Product> result = productMapper.selectPage(page, wrapper);
+        return new org.springframework.data.domain.PageImpl<>(
+                result.getRecords(),
+                pageable,
+                result.getTotal()
+        );
+    }
+
+    @Override
     public Product findById(Long id) {
         Product product = productMapper.selectById(id);
         if (product == null) {

@@ -60,11 +60,12 @@ public class CommunityController {
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) Integer type,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long postId) {
         try {
             // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
             Page<CommunityPost> postPage = new Page<>(page + 1, size);
-            IPage<Map<String, Object>> result = communityService.getPostList(postPage, type, keyword);
+            IPage<Map<String, Object>> result = communityService.getPostList(postPage, type, keyword, postId);
             return Result.success(result);
         } catch (Exception e) {
             return Result.error(e.getMessage());

@@ -20,7 +20,7 @@ public interface CommunityService {
     /**
      * 获取帖子列表（分页）
      */
-    IPage<Map<String, Object>> getPostList(Page<CommunityPost> page, Integer type, String keyword);
+    IPage<Map<String, Object>> getPostList(Page<CommunityPost> page, Integer type, String keyword, Long postId);
 
     /**
      * 获取帖子详情

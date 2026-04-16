@@ -213,9 +213,11 @@ public class QuizServiceImpl extends ServiceImpl<QuizQuestionMapper, QuizQuestio
     }
 
     @Override
-    public IPage<QuizQuestion> getAdminQuestionList(Page<QuizQuestion> page, Integer category, Integer difficulty, String keyword) {
+    public IPage<QuizQuestion> getAdminQuestionList(Page<QuizQuestion> page, Integer category, Integer difficulty, String keyword, Integer status) {
         LambdaQueryWrapper<QuizQuestion> wrapper = new LambdaQueryWrapper<>();
-        // 管理员可以看到所有状态的问题
+        if (status != null) {
+            wrapper.eq(QuizQuestion::getStatus, status);
+        }
         if (category != null) {
             wrapper.eq(QuizQuestion::getCategory, category);
         }
@@ -223,7 +225,9 @@ public class QuizServiceImpl extends ServiceImpl<QuizQuestionMapper, QuizQuestio
             wrapper.eq(QuizQuestion::getDifficulty, difficulty);
         }
         if (keyword != null && !keyword.trim().isEmpty()) {
-            wrapper.like(QuizQuestion::getQuestion, keyword);
+            String k = keyword.trim();
+            wrapper.and(w -> w.like(QuizQuestion::getQuestion, k)
+                    .or().like(QuizQuestion::getExplanation, k));
         }
         wrapper.orderByDesc(QuizQuestion::getCreateTime);
         return questionMapper.selectPage(page, wrapper);

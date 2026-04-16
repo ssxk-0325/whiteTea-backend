@@ -112,9 +112,11 @@ public class CultureServiceImpl extends ServiceImpl<CultureContentMapper, Cultur
     }
 
     @Override
-    public IPage<CultureContent> getAdminContentList(Page<CultureContent> page, Integer contentType, Integer type, String keyword) {
+    public IPage<CultureContent> getAdminContentList(Page<CultureContent> page, Integer contentType, Integer type, String keyword, Integer status) {
         LambdaQueryWrapper<CultureContent> wrapper = new LambdaQueryWrapper<>();
-        // 管理员可以看到所有状态的内容，不限制status
+        if (status != null) {
+            wrapper.eq(CultureContent::getStatus, status);
+        }
         if (contentType != null) {
             wrapper.eq(CultureContent::getContentType, contentType);
         }

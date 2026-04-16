@@ -18,6 +18,12 @@ public interface ProductService {
     Page<Product> findProducts(Pageable pageable, Long categoryId, String keyword, BigDecimal minPrice, BigDecimal maxPrice);
 
     /**
+     * 管理后台：分页查询产品（可含下架，按条件筛选）
+     */
+    Page<Product> findProductsForAdmin(Pageable pageable, Long categoryId, String keyword, Integer status,
+                                       BigDecimal minPrice, BigDecimal maxPrice);
+
+    /**
      * 根据ID查找产品
      */
     Product findById(Long id);

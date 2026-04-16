@@ -199,9 +199,11 @@ public class ActivityServiceImpl extends ServiceImpl<ExperienceActivityMapper, E
     }
 
     @Override
-    public IPage<ExperienceActivity> getAdminActivityList(Page<ExperienceActivity> page, Integer type, String keyword) {
+    public IPage<ExperienceActivity> getAdminActivityList(Page<ExperienceActivity> page, Integer type, String keyword, Integer activityStatus) {
         LambdaQueryWrapper<ExperienceActivity> wrapper = new LambdaQueryWrapper<>();
-        // 管理员可以看到所有状态的活动，包括已取消的
+        if (activityStatus != null) {
+            wrapper.eq(ExperienceActivity::getStatus, activityStatus);
+        }
         if (type != null) {
             wrapper.eq(ExperienceActivity::getType, type);
         }

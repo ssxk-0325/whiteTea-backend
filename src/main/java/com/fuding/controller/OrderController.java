@@ -401,9 +401,11 @@ public class OrderController {
      */
     @GetMapping("/admin/list")
     public Result<List<Map<String, Object>>> getAllOrders(
-            @RequestParam(required = false) Integer status) {
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long userId) {
         try {
-            List<Order> orders = orderService.getAllOrders(status);
+            List<Order> orders = orderService.getAllOrders(status, keyword, userId);
             
             // 为每个订单添加订单项
             List<Map<String, Object>> result = orders.stream().map(order -> {

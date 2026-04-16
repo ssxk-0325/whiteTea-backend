@@ -176,7 +176,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public List<Map<String, Object>> getAdminSessions(Integer status) {
+    public List<Map<String, Object>> getAdminSessions(Integer status, String keyword) {
         LambdaQueryWrapper<CustomerServiceSession> wrapper = new LambdaQueryWrapper<>();
         if (status != null) {
             wrapper.eq(CustomerServiceSession::getStatus, status);
@@ -185,7 +185,7 @@ public class ChatServiceImpl implements ChatService {
         }
         wrapper.orderByDesc(CustomerServiceSession::getLastMessageTime);
         List<CustomerServiceSession> sessions = sessionMapper.selectList(wrapper);
-        return sessions.stream().map(s -> {
+        List<Map<String, Object>> list = sessions.stream().map(s -> {
             Map<String, Object> item = new HashMap<>();
             item.put("session", s);
             try {
@@ -198,6 +198,19 @@ public class ChatServiceImpl implements ChatService {
                 item.put("user", null);
             }
             return item;
+        }).collect(Collectors.toList());
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return list;
+        }
+        String k = keyword.trim().toLowerCase();
+        return list.stream().filter(item -> {
+            CustomerServiceSession s = (CustomerServiceSession) item.get("session");
+            User u = (User) item.get("user");
+            String no = s != null && s.getSessionNo() != null ? s.getSessionNo().toLowerCase() : "";
+            String un = u != null && u.getUsername() != null ? u.getUsername().toLowerCase() : "";
+            String nn = u != null && u.getNickname() != null ? u.getNickname().toLowerCase() : "";
+            String uid = s != null && s.getUserId() != null ? String.valueOf(s.getUserId()) : "";
+            return no.contains(k) || un.contains(k) || nn.contains(k) || uid.contains(k);
         }).collect(Collectors.toList());
     }
 

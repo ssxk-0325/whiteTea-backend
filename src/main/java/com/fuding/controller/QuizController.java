@@ -148,6 +148,7 @@ public class QuizController {
             @RequestParam(required = false) Integer category,
             @RequestParam(required = false) Integer difficulty,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer status,
             HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
@@ -158,7 +159,7 @@ public class QuizController {
 
             // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
             Page<QuizQuestion> questionPage = new Page<>(page + 1, size);
-            IPage<QuizQuestion> result = quizService.getAdminQuestionList(questionPage, category, difficulty, keyword);
+            IPage<QuizQuestion> result = quizService.getAdminQuestionList(questionPage, category, difficulty, keyword, status);
             return Result.success(result);
         } catch (Exception e) {
             return Result.error(e.getMessage());

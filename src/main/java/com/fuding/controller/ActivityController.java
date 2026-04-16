@@ -214,6 +214,7 @@ public class ActivityController {
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) Integer type,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer activityStatus,
             HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
@@ -224,7 +225,7 @@ public class ActivityController {
 
             // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
             Page<ExperienceActivity> activityPage = new Page<>(page + 1, size);
-            IPage<ExperienceActivity> result = activityService.getAdminActivityList(activityPage, type, keyword);
+            IPage<ExperienceActivity> result = activityService.getAdminActivityList(activityPage, type, keyword, activityStatus);
             return Result.success(result);
         } catch (Exception e) {
             return Result.error(e.getMessage());
@@ -322,6 +323,7 @@ public class ActivityController {
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false) Integer type,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long activityId,
             HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
@@ -331,7 +333,7 @@ public class ActivityController {
             jwtUtil.getUserIdFromToken(token); // 验证token有效性
 
             Page<IndustryApplication> p = new Page<>(page + 1, size);
-            IPage<Map<String, Object>> result = industryApplicationService.adminList(p, status, type, keyword);
+            IPage<Map<String, Object>> result = industryApplicationService.adminList(p, status, type, keyword, activityId);
             return Result.success(result);
         } catch (Exception e) {
             return Result.error(e.getMessage());

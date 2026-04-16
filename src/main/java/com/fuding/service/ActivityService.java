@@ -48,7 +48,7 @@ public interface ActivityService {
     /**
      * 管理员获取活动列表（包括所有状态）
      */
-    IPage<ExperienceActivity> getAdminActivityList(Page<ExperienceActivity> page, Integer type, String keyword);
+    IPage<ExperienceActivity> getAdminActivityList(Page<ExperienceActivity> page, Integer type, String keyword, Integer activityStatus);
 
     /**
      * 管理员创建活动

@@ -14,7 +14,7 @@ public interface IndustryApplicationService {
 
     IPage<Map<String, Object>> getMyApplications(Page<IndustryApplication> page, Long userId, Integer status, Integer type);
 
-    IPage<Map<String, Object>> adminList(Page<IndustryApplication> page, Integer status, Integer type, String keyword);
+    IPage<Map<String, Object>> adminList(Page<IndustryApplication> page, Integer status, Integer type, String keyword, Long activityId);
 
     IndustryApplication adminReview(Long applicationId, Integer status, String adminRemark);
 }

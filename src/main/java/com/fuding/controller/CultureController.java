@@ -199,6 +199,7 @@ public class CultureController {
             @RequestParam(required = false) Integer contentType,
             @RequestParam(required = false) Integer type,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer status,
             HttpServletRequest request) {
         try {
             // 验证管理员权限
@@ -210,7 +211,7 @@ public class CultureController {
 
             // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
             Page<CultureContent> contentPage = new Page<>(page + 1, size);
-            IPage<CultureContent> result = cultureService.getAdminContentList(contentPage, contentType, type, keyword);
+            IPage<CultureContent> result = cultureService.getAdminContentList(contentPage, contentType, type, keyword, status);
             return Result.success(result);
         } catch (Exception e) {
             return Result.error(e.getMessage());

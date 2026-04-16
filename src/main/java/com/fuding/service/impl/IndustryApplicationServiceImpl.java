@@ -132,8 +132,11 @@ public class IndustryApplicationServiceImpl extends ServiceImpl<IndustryApplicat
     }
 
     @Override
-    public IPage<Map<String, Object>> adminList(Page<IndustryApplication> page, Integer status, Integer type, String keyword) {
+    public IPage<Map<String, Object>> adminList(Page<IndustryApplication> page, Integer status, Integer type, String keyword, Long activityId) {
         LambdaQueryWrapper<IndustryApplication> wrapper = new LambdaQueryWrapper<>();
+        if (activityId != null) {
+            wrapper.eq(IndustryApplication::getActivityId, activityId);
+        }
         if (status != null) {
             wrapper.eq(IndustryApplication::getStatus, status);
         }

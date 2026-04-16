@@ -156,10 +156,11 @@ public class CustomerServiceController {
 
     @GetMapping("/admin/sessions")
     public Result<List<Map<String, Object>>> adminSessions(@RequestParam(required = false) Integer status,
+                                                            @RequestParam(required = false) String keyword,
                                                             HttpServletRequest request) {
         try {
             requireAdmin(request);
-            return Result.success(chatService.getAdminSessions(status));
+            return Result.success(chatService.getAdminSessions(status, keyword));
         } catch (Exception e) {
             return Result.error("获取会话列表失败：" + e.getMessage());
         }

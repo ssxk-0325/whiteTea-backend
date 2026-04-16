@@ -354,10 +354,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
 
     @Override
-    public List<Order> getAllOrders(Integer status) {
+    public List<Order> getAllOrders(Integer status, String keyword, Long userId) {
         LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
         if (status != null) {
             wrapper.eq(Order::getStatus, status);
+        }
+        if (userId != null) {
+            wrapper.eq(Order::getUserId, userId);
+        }
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String k = keyword.trim();
+            wrapper.and(w -> w.like(Order::getOrderNo, k)
+                    .or().like(Order::getReceiverPhone, k)
+                    .or().like(Order::getReceiverName, k));
         }
         wrapper.orderByDesc(Order::getCreateTime);
         return orderMapper.selectList(wrapper);

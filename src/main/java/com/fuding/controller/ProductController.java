@@ -74,6 +74,30 @@ public class ProductController {
     }
 
     /**
+     * 管理后台：分页查询产品（含下架、多条件筛选）
+     */
+    @GetMapping("/admin/list")
+    public Result<Page<Product>> getProductAdminList(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            HttpServletRequest request) {
+        try {
+            String authError = ensureAdmin(request);
+            if (authError != null) return Result.error(authError);
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createTime"));
+            Page<Product> products = productService.findProductsForAdmin(pageable, categoryId, keyword, status, minPrice, maxPrice);
+            return Result.success(products);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
      * 根据ID获取产品详情
      */
     @GetMapping("/{id}")

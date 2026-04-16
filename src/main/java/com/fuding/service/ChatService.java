@@ -44,7 +44,7 @@ public interface ChatService {
     /**
      * 管理员会话列表（含用户信息摘要）
      */
-    List<Map<String, Object>> getAdminSessions(Integer status);
+    List<Map<String, Object>> getAdminSessions(Integer status, String keyword);
 
     /**
      * 管理员回复（若会话尚未转人工则自动标记为转人工）

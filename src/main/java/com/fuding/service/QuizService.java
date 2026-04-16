@@ -41,7 +41,7 @@ public interface QuizService {
     /**
      * 管理员获取问题列表（包括所有状态）
      */
-    IPage<QuizQuestion> getAdminQuestionList(Page<QuizQuestion> page, Integer category, Integer difficulty, String keyword);
+    IPage<QuizQuestion> getAdminQuestionList(Page<QuizQuestion> page, Integer category, Integer difficulty, String keyword, Integer status);
 
     /**
      * 管理员创建问题

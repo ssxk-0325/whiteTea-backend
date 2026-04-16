@@ -59,6 +59,6 @@ public interface CultureService {
     /**
      * 管理员获取内容列表（包括未发布的）
      */
-    IPage<CultureContent> getAdminContentList(Page<CultureContent> page, Integer contentType, Integer type, String keyword);
+    IPage<CultureContent> getAdminContentList(Page<CultureContent> page, Integer contentType, Integer type, String keyword, Integer status);
 }
 
