@@ -142,6 +142,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public void resetPassword(String username, String phone, String newPassword) {
+        if (!StringUtils.hasText(username)) {
+            throw new RuntimeException("用户名不能为空");
+        }
+        if (!StringUtils.hasText(phone)) {
+            throw new RuntimeException("手机号不能为空");
+        }
+        if (!StringUtils.hasText(newPassword) || newPassword.length() < 6) {
+            throw new RuntimeException("新密码长度不能少于6位");
+        }
+
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getUsername, username.trim());
+        User user = userMapper.selectOne(wrapper);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        if (!phone.trim().equals(user.getPhone())) {
+            throw new RuntimeException("用户名与手机号不匹配");
+        }
+
+        user.setPassword(Md5Util.encrypt(newPassword));
+        userMapper.updateById(user);
+    }
+
+    @Override
     public IPage<User> getUserList(Page<User> page, String keyword) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         

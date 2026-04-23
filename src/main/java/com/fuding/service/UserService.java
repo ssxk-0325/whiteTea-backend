@@ -40,6 +40,11 @@ public interface UserService {
     void changePassword(Long userId, String oldPassword, String newPassword);
 
     /**
+     * 忘记密码（通过用户名+手机号重置）
+     */
+    void resetPassword(String username, String phone, String newPassword);
+
+    /**
      * 获取用户列表（管理员接口）
      */
     IPage<User> getUserList(Page<User> page, String keyword);

@@ -168,6 +168,26 @@ public class UserController {
     }
 
     /**
+     * 忘记密码（用户名+手机号+验证码）
+     */
+    @PostMapping("/forgot-password")
+    public Result<Void> forgotPassword(@RequestBody Map<String, String> params) {
+        try {
+            String username = params.get("username");
+            String phone = params.get("phone");
+            String newPassword = params.get("newPassword");
+            String captchaId = params.get("captchaId");
+            String captchaCode = params.get("captchaCode");
+
+            validateCaptcha(captchaId, captchaCode);
+            userService.resetPassword(username, phone, newPassword);
+            return Result.success("密码重置成功，请重新登录", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
      * 管理员获取用户列表
      */
     @GetMapping("/admin/list")
