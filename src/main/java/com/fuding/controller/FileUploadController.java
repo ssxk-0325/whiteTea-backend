@@ -7,7 +7,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
@@ -59,9 +58,9 @@ public class FileUploadController {
                 dir.mkdirs();
             }
 
-            // 保存文件
+            // 流式落盘，避免大文件时一次性读入内存
             Path path = Paths.get(imageDir + filename);
-            Files.write(path, file.getBytes());
+            file.transferTo(path.toFile());
 
             String url = buildPublicFileUrl("/uploads/white-tea/images/" + filename);
             return Result.success("上传成功", url);
@@ -82,10 +81,10 @@ public class FileUploadController {
                 return Result.error("文件不能为空");
             }
 
-            // 检查文件大小（视频可以更大，这里设置为100MB）
-            long videoMaxSize = 100 * 1024 * 1024; // 100MB
+            // 检查文件大小（与 spring.servlet.multipart 上限一致，200MB）
+            long videoMaxSize = 200L * 1024 * 1024;
             if (file.getSize() > videoMaxSize) {
-                return Result.error("文件大小超过限制（最大100MB）");
+                return Result.error("文件大小超过限制（最大200MB）");
             }
 
             // 检查文件类型
@@ -103,9 +102,9 @@ public class FileUploadController {
                 dir.mkdirs();
             }
 
-            // 保存文件
+            // 流式落盘，避免大文件时一次性读入内存
             Path path = Paths.get(videoDir + filename);
-            Files.write(path, file.getBytes());
+            file.transferTo(path.toFile());
 
             String url = buildPublicFileUrl("/uploads/white-tea/videos/" + filename);
             return Result.success("上传成功", url);

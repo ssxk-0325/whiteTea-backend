@@ -1,5 +1,8 @@
 server:
   port: 8080
+  tomcat:
+    max-http-form-post-size: 200MB
+    max-swallow-size: 200MB
   servlet:
     context-path: /api
 
@@ -8,8 +11,8 @@ spring:
     name: white-tea-platform
   servlet:
     multipart:
-      max-file-size: 100MB
-      max-request-size: 100MB
+      max-file-size: 200MB
+      max-request-size: 200MB
   # 新增：启用ANSI彩色输出（关键配置1）
   output:
     ansi:
