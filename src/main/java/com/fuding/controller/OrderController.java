@@ -490,6 +490,32 @@ public class OrderController {
     }
 
     /**
+     * 管理后台：确认收货（将待收货订单改为已完成）
+     */
+    @PostMapping("/admin/{id}/confirm")
+    public Result<Void> adminConfirmReceive(@PathVariable Long id) {
+        try {
+            orderService.confirmReceive(id);
+            return Result.success("确认收货成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理后台：取消订单（仅待付款订单）
+     */
+    @PostMapping("/admin/{id}/cancel")
+    public Result<Void> adminCancelOrder(@PathVariable Long id) {
+        try {
+            orderService.cancelOrder(id);
+            return Result.success("取消订单成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
      * 管理后台：配送模拟轨迹（与前台逻辑一致）
      */
     @GetMapping("/admin/{id}/delivery-track")
