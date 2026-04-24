@@ -141,11 +141,38 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (product.getDescription() != null) {
             existingProduct.setDescription(product.getDescription());
         }
+        if (product.getImage() != null) {
+            existingProduct.setImage(product.getImage());
+        }
+        if (product.getImages() != null) {
+            existingProduct.setImages(product.getImages());
+        }
+        if (product.getCategoryId() != null) {
+            existingProduct.setCategoryId(product.getCategoryId());
+        }
         if (product.getPrice() != null) {
             existingProduct.setPrice(product.getPrice());
         }
+        if (product.getOriginalPrice() != null) {
+            existingProduct.setOriginalPrice(product.getOriginalPrice());
+        }
         if (product.getStock() != null) {
             existingProduct.setStock(product.getStock());
+        }
+        if (product.getSales() != null) {
+            existingProduct.setSales(product.getSales());
+        }
+        if (product.getUnit() != null) {
+            existingProduct.setUnit(product.getUnit());
+        }
+        if (product.getSpecification() != null) {
+            existingProduct.setSpecification(product.getSpecification());
+        }
+        if (product.getOrigin() != null) {
+            existingProduct.setOrigin(product.getOrigin());
+        }
+        if (product.getYear() != null) {
+            existingProduct.setYear(product.getYear());
         }
         if (product.getStatus() != null) {
             existingProduct.setStatus(product.getStatus());

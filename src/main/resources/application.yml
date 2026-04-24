@@ -6,6 +6,10 @@ server:
 spring:
   application:
     name: white-tea-platform
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
   # 新增：启用ANSI彩色输出（关键配置1）
   output:
     ansi:
