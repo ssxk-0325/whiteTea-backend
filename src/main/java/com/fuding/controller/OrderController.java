@@ -65,7 +65,6 @@ public class OrderController {
             Long userId = jwtUtil.getUserIdFromToken(token);
 
             Integer deliveryType = params.get("deliveryType") != null ? Integer.valueOf(params.get("deliveryType").toString()) : 1;
-            Long storeId = params.get("storeId") != null ? Long.valueOf(params.get("storeId").toString()) : null;
             Long addressId = params.get("addressId") != null ? Long.valueOf(params.get("addressId").toString()) : null;
             String receiverName = params.get("receiverName") != null ? params.get("receiverName").toString() : "";
             String receiverPhone = params.get("receiverPhone") != null ? params.get("receiverPhone").toString() : "";
@@ -86,7 +85,7 @@ public class OrderController {
 
             Long couponId = params.get("couponId") != null ? Long.valueOf(params.get("couponId").toString()) : null;
             Integer orderMode = params.get("orderMode") != null ? Integer.valueOf(params.get("orderMode").toString()) : 0;
-            Order order = orderService.createOrder(userId, deliveryType, storeId, addressId, receiverName, receiverPhone, receiverAddress, remark, cartIds, couponId, orderMode);
+            Order order = orderService.createOrder(userId, deliveryType, addressId, receiverName, receiverPhone, receiverAddress, remark, cartIds, couponId, orderMode);
             return Result.success("订单创建成功", order);
         } catch (Exception e) {
             return Result.error(e.getMessage());
@@ -227,7 +226,6 @@ public class OrderController {
                 orderMap.put("receiverPhone", order.getReceiverPhone());
                 orderMap.put("receiverAddress", order.getReceiverAddress());
                 orderMap.put("deliveryType", order.getDeliveryType());
-                orderMap.put("storeId", order.getStoreId());
                 orderMap.put("createTime", order.getCreateTime());
                 orderMap.put("payTime", order.getPayTime());
                 orderMap.put("shipTime", order.getShipTime());
@@ -421,7 +419,6 @@ public class OrderController {
                 orderMap.put("receiverPhone", order.getReceiverPhone());
                 orderMap.put("receiverAddress", order.getReceiverAddress());
                 orderMap.put("deliveryType", order.getDeliveryType());
-                orderMap.put("storeId", order.getStoreId());
                 orderMap.put("createTime", order.getCreateTime());
                 orderMap.put("payTime", order.getPayTime());
                 orderMap.put("shipTime", order.getShipTime());

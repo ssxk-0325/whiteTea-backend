@@ -16,11 +16,11 @@ import com.fuding.mapper.CartMapper;
 import com.fuding.mapper.OrderItemMapper;
 import com.fuding.mapper.OrderMapper;
 import com.fuding.mapper.ProductMapper;
-import com.fuding.mapper.StoreMapper;
 import com.fuding.mapper.RewardExchangeMapper;
 import com.fuding.mapper.RewardMapper;
 import com.fuding.mapper.UserMapper;
 import com.fuding.service.OrderService;
+import com.fuding.service.StoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,7 +51,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private ProductMapper productMapper;
 
     @Autowired
-    private StoreMapper storeMapper;
+    private StoreService storeService;
 
     @Autowired
     private UserMapper userMapper;
@@ -66,7 +66,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private RewardMapper rewardMapper;
 
     @Override
-    public Order createOrder(Long userId, Integer deliveryType, Long storeId, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark, List<Long> cartIds, Long couponId, Integer orderMode) {
+    public Order createOrder(Long userId, Integer deliveryType, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark, List<Long> cartIds, Long couponId, Integer orderMode) {
         // 获取购物车商品（可指定购物车项 id，仅结算选中商品）
         LambdaQueryWrapper<Cart> cartWrapper = new LambdaQueryWrapper<>();
         cartWrapper.eq(Cart::getUserId, userId);
@@ -86,13 +86,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             deliveryType = 1;
         }
         if (deliveryType == 2) {
-            // 线下自提：校验门店并填充收货信息
-            if (storeId == null) {
-                throw new RuntimeException("请选择自提门店");
-            }
-            Store store = storeMapper.selectById(storeId);
+            // 线下自提：平台唯一门店，不再写入订单级门店 ID
+            Store store = storeService.getDefaultStore();
             if (store == null) {
-                throw new RuntimeException("门店不存在");
+                throw new RuntimeException("未配置营业中的自提门店，请联系管理员");
             }
             User user = userMapper.selectById(userId);
             receiverName = (user != null && user.getNickname() != null && !user.getNickname().isEmpty()) ? user.getNickname() : "到店自提";
@@ -117,7 +114,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setOrderNo(generateOrderNo());
         order.setUserId(userId);
         order.setDeliveryType(deliveryType);
-        order.setStoreId(deliveryType == 2 ? storeId : null);
         order.setReceiverName(receiverName);
         order.setReceiverPhone(receiverPhone);
         order.setReceiverAddress(receiverAddress);

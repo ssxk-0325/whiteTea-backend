@@ -8,8 +8,8 @@ import com.fuding.service.StoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 门店服务实现类
@@ -29,8 +29,15 @@ public class StoreServiceImpl extends ServiceImpl<StoreMapper, Store> implements
             wrapper.eq(Store::getCity, city);
         }
         
-        wrapper.orderByAsc(Store::getCreateTime);
+        wrapper.orderByAsc(Store::getId);
+        wrapper.last("LIMIT 1");
         return storeMapper.selectList(wrapper);
+    }
+
+    @Override
+    public Store getDefaultStore() {
+        List<Store> list = getStoreList(null);
+        return list.isEmpty() ? null : list.get(0);
     }
 
     @Override
@@ -44,61 +51,12 @@ public class StoreServiceImpl extends ServiceImpl<StoreMapper, Store> implements
 
     @Override
     public List<Store> getNearbyStores(Double longitude, Double latitude, Double radius) {
-        if (longitude == null || latitude == null) {
-            return getStoreList(null);
+        Store def = getDefaultStore();
+        if (def == null) {
+            return Collections.emptyList();
         }
-        
-        // 默认搜索半径5公里
-        final double searchRadius = (radius == null || radius <= 0) ? 5.0 : radius;
-        final double finalLongitude = longitude;
-        final double finalLatitude = latitude;
-        
-        // 获取所有营业中的门店
-        List<Store> allStores = getStoreList(null);
-        
-        // 计算距离并筛选
-        return allStores.stream()
-                .filter(store -> {
-                    if (store.getLongitude() == null || store.getLatitude() == null) {
-                        return false;
-                    }
-                    double distance = calculateDistance(
-                            finalLatitude, finalLongitude,
-                            store.getLatitude().doubleValue(), store.getLongitude().doubleValue()
-                    );
-                    return distance <= searchRadius;
-                })
-                .sorted((s1, s2) -> {
-                    double d1 = calculateDistance(
-                            finalLatitude, finalLongitude,
-                            s1.getLatitude().doubleValue(), s1.getLongitude().doubleValue()
-                    );
-                    double d2 = calculateDistance(
-                            finalLatitude, finalLongitude,
-                            s2.getLatitude().doubleValue(), s2.getLongitude().doubleValue()
-                    );
-                    return Double.compare(d1, d2);
-                })
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 计算两点之间的距离（公里）
-     * 使用Haversine公式
-     */
-    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        final int R = 6371; // 地球半径（公里）
-        
-        double latDistance = Math.toRadians(lat2 - lat1);
-        double lonDistance = Math.toRadians(lon2 - lon1);
-        
-        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
-        
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        
-        return R * c;
+        // 单门店模式：接口兼容附近检索，实际仅返回唯一门店
+        return Collections.singletonList(def);
     }
 }
 

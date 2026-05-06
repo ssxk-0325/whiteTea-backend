@@ -30,5 +30,10 @@ public interface StoreService {
      * @return 附近门店列表
      */
     List<Store> getNearbyStores(Double longitude, Double latitude, Double radius);
+
+    /**
+     * 平台唯一营业门店（单商家模式）；未配置时返回 null
+     */
+    Store getDefaultStore();
 }
 
