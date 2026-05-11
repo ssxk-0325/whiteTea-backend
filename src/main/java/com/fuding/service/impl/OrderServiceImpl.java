@@ -19,6 +19,7 @@ import com.fuding.mapper.ProductMapper;
 import com.fuding.mapper.RewardExchangeMapper;
 import com.fuding.mapper.RewardMapper;
 import com.fuding.mapper.UserMapper;
+import com.fuding.service.OrderReviewService;
 import com.fuding.service.OrderService;
 import com.fuding.service.StoreService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +65,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Autowired
     private RewardMapper rewardMapper;
+
+    @Autowired
+    private OrderReviewService orderReviewService;
 
     @Override
     public Order createOrder(Long userId, Integer deliveryType, Long addressId, String receiverName, String receiverPhone, String receiverAddress, String remark, List<Long> cartIds, Long couponId, Integer orderMode) {
@@ -406,6 +410,115 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             return totalAmount;
         }
         return discount.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    @Override
+    public void applyRefund(Long userId, Long orderId, String reason) {
+        Order order = getOrderById(orderId);
+        if (!order.getUserId().equals(userId)) {
+            throw new RuntimeException("无权操作该订单");
+        }
+        Integer st = order.getStatus();
+        if (st == null || (st != 1 && st != 2 && st != 3)) {
+            throw new RuntimeException("当前订单状态不可申请退款");
+        }
+        if (order.getPayTime() == null) {
+            throw new RuntimeException("未支付订单请直接取消，无需申请退款");
+        }
+        String r = reason == null ? "" : reason.trim();
+        if (r.isEmpty()) {
+            throw new RuntimeException("请填写退款原因");
+        }
+        if (r.length() > 500) {
+            throw new RuntimeException("退款说明请勿超过500字");
+        }
+        order.setRefundPrevStatus(st);
+        order.setRefundReason(r);
+        order.setRefundApplyTime(LocalDateTime.now());
+        order.setRefundAdminRemark(null);
+        order.setRefundAuditTime(null);
+        order.setStatus(5);
+        orderMapper.updateById(order);
+    }
+
+    @Override
+    public void adminApproveRefund(Long orderId) {
+        Order order = getOrderById(orderId);
+        if (order.getStatus() == null || order.getStatus() != 5) {
+            throw new RuntimeException("订单不在退款审核中");
+        }
+        restoreInventoryForOrder(orderId);
+        deductRewardPointsForOrder(order);
+        releaseMallCouponIfBound(order);
+        orderReviewService.removeByOrderId(orderId);
+        order.setStatus(6);
+        order.setRefundAuditTime(LocalDateTime.now());
+        order.setRefundPrevStatus(null);
+        order.setRefundAdminRemark(null);
+        orderMapper.updateById(order);
+    }
+
+    @Override
+    public void adminRejectRefund(Long orderId, String remark) {
+        Order order = getOrderById(orderId);
+        if (order.getStatus() == null || order.getStatus() != 5) {
+            throw new RuntimeException("订单不在退款审核中");
+        }
+        Integer prev = order.getRefundPrevStatus();
+        if (prev == null || (prev != 1 && prev != 2 && prev != 3)) {
+            throw new RuntimeException("无法恢复订单状态，请联系技术处理");
+        }
+        String m = remark == null ? "" : remark.trim();
+        if (m.isEmpty()) {
+            throw new RuntimeException("请填写驳回原因");
+        }
+        if (m.length() > 500) {
+            throw new RuntimeException("驳回说明请勿超过500字");
+        }
+        order.setStatus(prev);
+        order.setRefundPrevStatus(null);
+        order.setRefundReason(null);
+        order.setRefundApplyTime(null);
+        order.setRefundAdminRemark(m);
+        order.setRefundAuditTime(LocalDateTime.now());
+        orderMapper.updateById(order);
+    }
+
+    private void restoreInventoryForOrder(Long orderId) {
+        LambdaQueryWrapper<OrderItem> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(OrderItem::getOrderId, orderId);
+        List<OrderItem> items = orderItemMapper.selectList(wrapper);
+        for (OrderItem item : items) {
+            Product product = productMapper.selectById(item.getProductId());
+            if (product != null) {
+                product.setStock(product.getStock() + item.getQuantity());
+                int sales = product.getSales() == null ? 0 : product.getSales();
+                product.setSales(Math.max(0, sales - item.getQuantity()));
+                productMapper.updateById(product);
+            }
+        }
+    }
+
+    private void deductRewardPointsForOrder(Order order) {
+        User user = userMapper.selectById(order.getUserId());
+        if (user == null) {
+            return;
+        }
+        int current = user.getPoints() == null ? 0 : user.getPoints();
+        int sub = order.getRewardPoints() == null ? 0 : order.getRewardPoints();
+        user.setPoints(Math.max(0, current - Math.max(sub, 0)));
+        userMapper.updateById(user);
+    }
+
+    private void releaseMallCouponIfBound(Order order) {
+        if (order.getCouponId() == null) {
+            return;
+        }
+        RewardExchange ex = rewardExchangeMapper.selectById(order.getCouponId());
+        if (ex != null && order.getId().equals(ex.getOrderId())) {
+            ex.setOrderId(null);
+            rewardExchangeMapper.updateById(ex);
+        }
     }
 }
 

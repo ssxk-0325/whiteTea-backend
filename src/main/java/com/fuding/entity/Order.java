@@ -148,4 +148,34 @@ public class Order extends BaseEntity {
      */
     @TableField("reward_points")
     private Integer rewardPoints;
+
+    /**
+     * 申请退款前的订单状态（用于管理员驳回后恢复）
+     */
+    @TableField("refund_prev_status")
+    private Integer refundPrevStatus;
+
+    /**
+     * 用户填写的退款/退货原因
+     */
+    @TableField("refund_reason")
+    private String refundReason;
+
+    /**
+     * 用户发起退款申请时间
+     */
+    @TableField("refund_apply_time")
+    private LocalDateTime refundApplyTime;
+
+    /**
+     * 管理员处理退款时间（同意或驳回）
+     */
+    @TableField("refund_audit_time")
+    private LocalDateTime refundAuditTime;
+
+    /**
+     * 驳回原因（同意退款时可为空）
+     */
+    @TableField("refund_admin_remark")
+    private String refundAdminRemark;
 }

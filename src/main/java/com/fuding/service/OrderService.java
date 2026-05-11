@@ -56,5 +56,20 @@ public interface OrderService {
      * 获取所有订单列表（管理后台使用）
      */
     List<Order> getAllOrders(Integer status, String keyword, Long userId);
+
+    /**
+     * 用户申请退货退款（待发货/待收货/已完成且已支付）
+     */
+    void applyRefund(Long userId, Long orderId, String reason);
+
+    /**
+     * 管理员同意退款：已退款、恢复库存、扣回积分、释放优惠券、删除评价
+     */
+    void adminApproveRefund(Long orderId);
+
+    /**
+     * 管理员驳回退款：恢复申请前状态
+     */
+    void adminRejectRefund(Long orderId, String remark);
 }
 

@@ -239,6 +239,11 @@ public class OrderController {
                 orderMap.put("couponDiscountAmount", order.getCouponDiscountAmount());
                 orderMap.put("discountAmount", order.getDiscountAmount());
                 orderMap.put("rewardPoints", order.getRewardPoints());
+                orderMap.put("refundPrevStatus", order.getRefundPrevStatus());
+                orderMap.put("refundReason", order.getRefundReason());
+                orderMap.put("refundApplyTime", order.getRefundApplyTime());
+                orderMap.put("refundAuditTime", order.getRefundAuditTime());
+                orderMap.put("refundAdminRemark", order.getRefundAdminRemark());
 
                 // 获取订单项
                 com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<OrderItem> wrapper = 
@@ -395,6 +400,28 @@ public class OrderController {
     }
 
     /**
+     * 申请退货退款（待发货/待收货/已完成且已支付）
+     */
+    @PostMapping("/{id}/refund/apply")
+    public Result<Void> applyRefund(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, Object> params,
+            HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            String reason = params != null && params.get("reason") != null ? params.get("reason").toString() : "";
+            orderService.applyRefund(userId, id, reason);
+            return Result.success("已提交退款申请，请等待商家审核", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
      * 管理后台：获取所有订单列表
      */
     @GetMapping("/admin/list")
@@ -432,6 +459,11 @@ public class OrderController {
                 orderMap.put("couponDiscountAmount", order.getCouponDiscountAmount());
                 orderMap.put("discountAmount", order.getDiscountAmount());
                 orderMap.put("rewardPoints", order.getRewardPoints());
+                orderMap.put("refundPrevStatus", order.getRefundPrevStatus());
+                orderMap.put("refundReason", order.getRefundReason());
+                orderMap.put("refundApplyTime", order.getRefundApplyTime());
+                orderMap.put("refundAuditTime", order.getRefundAuditTime());
+                orderMap.put("refundAdminRemark", order.getRefundAdminRemark());
 
                 // 获取订单项
                 com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<OrderItem> wrapper = 
@@ -507,6 +539,33 @@ public class OrderController {
         try {
             orderService.cancelOrder(id);
             return Result.success("取消订单成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理后台：同意退款（恢复库存、扣积分、释放优惠券等）
+     */
+    @PostMapping("/admin/{id}/refund/approve")
+    public Result<Void> adminApproveRefund(@PathVariable Long id) {
+        try {
+            orderService.adminApproveRefund(id);
+            return Result.success("已同意退款", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理后台：驳回退款申请
+     */
+    @PostMapping("/admin/{id}/refund/reject")
+    public Result<Void> adminRejectRefund(@PathVariable Long id, @RequestBody Map<String, Object> params) {
+        try {
+            String remark = params != null && params.get("remark") != null ? params.get("remark").toString() : "";
+            orderService.adminRejectRefund(id, remark);
+            return Result.success("已驳回退款申请", null);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

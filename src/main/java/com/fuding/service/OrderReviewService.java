@@ -16,4 +16,7 @@ public interface OrderReviewService {
     boolean existsByOrderId(Long orderId);
 
     List<OrderReview> listByProductId(Long productId, int limit);
+
+    /** 删除订单关联评价（退款完成等场景） */
+    void removeByOrderId(Long orderId);
 }

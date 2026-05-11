@@ -99,4 +99,14 @@ public class OrderReviewServiceImpl extends ServiceImpl<OrderReviewMapper, Order
         }
         return new ArrayList<>(uniq.values());
     }
+
+    @Override
+    public void removeByOrderId(Long orderId) {
+        if (orderId == null) {
+            return;
+        }
+        LambdaQueryWrapper<OrderReview> w = new LambdaQueryWrapper<>();
+        w.eq(OrderReview::getOrderId, orderId);
+        this.remove(w);
+    }
 }
