@@ -62,7 +62,20 @@ public class ActivityServiceImpl extends ServiceImpl<ExperienceActivityMapper, E
         if (activity == null || activity.getStatus() == 3) {
             throw new RuntimeException("活动不存在或已取消");
         }
+        stripIndustryFollowupFields(activity);
         return activity;
+    }
+
+    /** 公开详情不返回产业类敏感对接信息（仅审核通过用户经 my-join 接口获取） */
+    private void stripIndustryFollowupFields(ExperienceActivity activity) {
+        if (activity == null) {
+            return;
+        }
+        activity.setPickMeetingPoint(null);
+        activity.setPickContactLine(null);
+        activity.setPickNotice(null);
+        activity.setTrainingMaterials(null);
+        activity.setTrainingExtraHint(null);
     }
 
     @Override
@@ -240,7 +253,13 @@ public class ActivityServiceImpl extends ServiceImpl<ExperienceActivityMapper, E
         activity.setTotalCoupons(params.get("totalCoupons") != null ? Integer.valueOf(params.get("totalCoupons").toString()) : 0);
         activity.setMaxParticipants(params.get("maxParticipants") != null ? Integer.valueOf(params.get("maxParticipants").toString()) : 0);
         activity.setStatus(params.get("status") != null ? Integer.valueOf(params.get("status").toString()) : 0);
-        
+
+        activity.setPickMeetingPoint(nullableStringParam(params.get("pickMeetingPoint")));
+        activity.setPickContactLine(nullableStringParam(params.get("pickContactLine")));
+        activity.setPickNotice(nullableStringParam(params.get("pickNotice")));
+        activity.setTrainingMaterials(nullableStringParam(params.get("trainingMaterials")));
+        activity.setTrainingExtraHint(nullableStringParam(params.get("trainingExtraHint")));
+
         activityMapper.insert(activity);
         return activity;
     }
@@ -289,9 +308,32 @@ public class ActivityServiceImpl extends ServiceImpl<ExperienceActivityMapper, E
         if (params.get("status") != null) {
             activity.setStatus(Integer.valueOf(params.get("status").toString()));
         }
+        if (params.containsKey("pickMeetingPoint")) {
+            activity.setPickMeetingPoint(nullableStringParam(params.get("pickMeetingPoint")));
+        }
+        if (params.containsKey("pickContactLine")) {
+            activity.setPickContactLine(nullableStringParam(params.get("pickContactLine")));
+        }
+        if (params.containsKey("pickNotice")) {
+            activity.setPickNotice(nullableStringParam(params.get("pickNotice")));
+        }
+        if (params.containsKey("trainingMaterials")) {
+            activity.setTrainingMaterials(nullableStringParam(params.get("trainingMaterials")));
+        }
+        if (params.containsKey("trainingExtraHint")) {
+            activity.setTrainingExtraHint(nullableStringParam(params.get("trainingExtraHint")));
+        }
 
         activityMapper.updateById(activity);
         return activity;
+    }
+
+    private static String nullableStringParam(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        String s = String.valueOf(raw).trim();
+        return s.isEmpty() ? null : s;
     }
 
     @Override

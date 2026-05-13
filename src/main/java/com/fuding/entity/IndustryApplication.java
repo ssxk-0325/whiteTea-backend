@@ -6,6 +6,8 @@ import com.fuding.common.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.time.LocalDateTime;
+
 /**
  * 产业服务报名/加入申请（采摘招募、批发与培训）
  */
@@ -40,5 +42,13 @@ public class IndustryApplication extends BaseEntity {
 
     @TableField("admin_remark")
     private String adminRemark;
+
+    /** 审核通过后生成的对接码（现场核对） */
+    @TableField("join_code")
+    private String joinCode;
+
+    /** 采摘招募：管理员到岗签到时间 */
+    @TableField("checked_in_at")
+    private LocalDateTime checkedInAt;
 }
 

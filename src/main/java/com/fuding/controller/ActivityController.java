@@ -152,15 +152,15 @@ public class ActivityController {
      * 产业服务：查询我的加入申请
      */
     @GetMapping("/{id}/my-join")
-    public Result<IndustryApplication> myJoin(@PathVariable Long id, HttpServletRequest request) {
+    public Result<Map<String, Object>> myJoin(@PathVariable Long id, HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
             if (token != null && token.startsWith("Bearer ")) {
                 token = token.substring(7);
             }
             Long userId = jwtUtil.getUserIdFromToken(token);
-            IndustryApplication app = industryApplicationService.getMyApplication(userId, id);
-            return Result.success(app);
+            Map<String, Object> detail = industryApplicationService.getMyJoinDetail(userId, id);
+            return Result.success(detail);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -358,6 +358,25 @@ public class ActivityController {
             String adminRemark = params.get("adminRemark") != null ? String.valueOf(params.get("adminRemark")) : null;
             IndustryApplication app = industryApplicationService.adminReview(id, status, adminRemark);
             return Result.success("审核成功", app);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员：采摘招募到岗签到（已通过申请）
+     */
+    @PutMapping("/admin/industry-joins/{id}/check-in")
+    public Result<IndustryApplication> adminCheckInIndustryPick(@PathVariable Long id,
+                                                                HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            jwtUtil.getUserIdFromToken(token);
+            IndustryApplication app = industryApplicationService.adminCheckInPick(id);
+            return Result.success("签到成功", app);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

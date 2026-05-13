@@ -15,9 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -84,6 +86,55 @@ public class IndustryApplicationServiceImpl extends ServiceImpl<IndustryApplicat
     }
 
     @Override
+    public Map<String, Object> getMyJoinDetail(Long userId, Long activityId) {
+        IndustryApplication app = getMyApplication(userId, activityId);
+        if (app == null) {
+            return null;
+        }
+        ExperienceActivity act = activityMapper.selectById(activityId);
+        Integer actType = act != null ? act.getType() : null;
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", app.getId());
+        m.put("activityId", app.getActivityId());
+        m.put("userId", app.getUserId());
+        m.put("realName", app.getRealName());
+        m.put("phone", app.getPhone());
+        m.put("location", app.getLocation());
+        m.put("remark", app.getRemark());
+        m.put("status", app.getStatus());
+        m.put("adminRemark", app.getAdminRemark());
+        m.put("createTime", app.getCreateTime());
+        m.put("updateTime", app.getUpdateTime());
+        m.put("activityType", actType);
+        boolean passed = app.getStatus() != null && app.getStatus() == 1;
+        m.put("joinCode", passed ? app.getJoinCode() : null);
+        m.put("checkedInAt", passed ? app.getCheckedInAt() : null);
+        if (passed && actType != null && actType == 5 && act != null) {
+            m.put("pickMeetingPoint", act.getPickMeetingPoint());
+            m.put("pickContactLine", act.getPickContactLine());
+            m.put("pickNotice", act.getPickNotice());
+            m.put("trainingMaterials", null);
+            m.put("trainingExtraHint", null);
+            m.put("activityPrice", null);
+        } else if (passed && actType != null && actType == 6 && act != null) {
+            m.put("pickMeetingPoint", null);
+            m.put("pickContactLine", null);
+            m.put("pickNotice", null);
+            m.put("trainingMaterials", act.getTrainingMaterials());
+            m.put("trainingExtraHint", act.getTrainingExtraHint());
+            m.put("activityPrice", act.getPrice());
+        } else {
+            m.put("pickMeetingPoint", null);
+            m.put("pickContactLine", null);
+            m.put("pickNotice", null);
+            m.put("trainingMaterials", null);
+            m.put("trainingExtraHint", null);
+            m.put("activityPrice", null);
+        }
+        return m;
+    }
+
+    @Override
     public IPage<Map<String, Object>> getMyApplications(Page<IndustryApplication> page, Long userId, Integer status, Integer type) {
         LambdaQueryWrapper<IndustryApplication> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(IndustryApplication::getUserId, userId);
@@ -119,6 +170,8 @@ public class IndustryApplicationServiceImpl extends ServiceImpl<IndustryApplicat
             row.put("remark", app.getRemark());
             row.put("status", app.getStatus());
             row.put("adminRemark", app.getAdminRemark());
+            row.put("joinCode", app.getJoinCode());
+            row.put("checkedInAt", app.getCheckedInAt());
             row.put("createTime", app.getCreateTime());
             row.put("updateTime", app.getUpdateTime());
             row.put("activityName", act != null ? act.getName() : null);
@@ -183,6 +236,8 @@ public class IndustryApplicationServiceImpl extends ServiceImpl<IndustryApplicat
             row.put("remark", app.getRemark());
             row.put("status", app.getStatus());
             row.put("adminRemark", app.getAdminRemark());
+            row.put("joinCode", app.getJoinCode());
+            row.put("checkedInAt", app.getCheckedInAt());
             row.put("createTime", app.getCreateTime());
 
             row.put("activityName", act != null ? act.getName() : null);
@@ -209,6 +264,35 @@ public class IndustryApplicationServiceImpl extends ServiceImpl<IndustryApplicat
         }
         app.setStatus(status);
         app.setAdminRemark(adminRemark);
+        if (status == 1 && (app.getJoinCode() == null || app.getJoinCode().trim().isEmpty())) {
+            ExperienceActivity act = activityMapper.selectById(app.getActivityId());
+            if (act != null && act.getType() != null) {
+                String prefix = act.getType() == 5 ? "PICK-" : "WHSL-";
+                String rnd = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+                app.setJoinCode(prefix + rnd);
+            }
+        }
+        applicationMapper.updateById(app);
+        return app;
+    }
+
+    @Override
+    public IndustryApplication adminCheckInPick(Long applicationId) {
+        IndustryApplication app = applicationMapper.selectById(applicationId);
+        if (app == null) {
+            throw new RuntimeException("申请不存在");
+        }
+        if (app.getStatus() == null || app.getStatus() != 1) {
+            throw new RuntimeException("仅已通过申请可签到");
+        }
+        ExperienceActivity act = activityMapper.selectById(app.getActivityId());
+        if (act == null || act.getType() == null || act.getType() != 5) {
+            throw new RuntimeException("仅采摘招募类申请支持到岗签到");
+        }
+        if (app.getCheckedInAt() != null) {
+            throw new RuntimeException("该申请已签到");
+        }
+        app.setCheckedInAt(LocalDateTime.now());
         applicationMapper.updateById(app);
         return app;
     }

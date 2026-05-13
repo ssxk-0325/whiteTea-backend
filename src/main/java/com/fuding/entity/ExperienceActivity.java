@@ -100,4 +100,24 @@ public class ExperienceActivity extends BaseEntity {
      */
     @TableField("status")
     private Integer status = 0;
+
+    /** 采摘招募：集合地点（公开接口不返回，仅审核通过用户经 my-join 可见） */
+    @TableField("pick_meeting_point")
+    private String pickMeetingPoint;
+
+    /** 采摘招募：联系人/电话 */
+    @TableField("pick_contact_line")
+    private String pickContactLine;
+
+    /** 采摘招募：上岗须知 */
+    @TableField("pick_notice")
+    private String pickNotice;
+
+    /** 批发培训：学习资料/链接（多行） */
+    @TableField("training_materials")
+    private String trainingMaterials;
+
+    /** 批发培训：费用与参训补充说明 */
+    @TableField("training_extra_hint")
+    private String trainingExtraHint;
 }

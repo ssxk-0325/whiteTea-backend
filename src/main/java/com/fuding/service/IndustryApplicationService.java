@@ -12,10 +12,18 @@ public interface IndustryApplicationService {
 
     IndustryApplication getMyApplication(Long userId, Long activityId);
 
+    /**
+     * 当前用户在指定活动下的报名详情（含审核通过后的对接信息；无报名返回 null）
+     */
+    Map<String, Object> getMyJoinDetail(Long userId, Long activityId);
+
     IPage<Map<String, Object>> getMyApplications(Page<IndustryApplication> page, Long userId, Integer status, Integer type);
 
     IPage<Map<String, Object>> adminList(Page<IndustryApplication> page, Integer status, Integer type, String keyword, Long activityId);
 
     IndustryApplication adminReview(Long applicationId, Integer status, String adminRemark);
+
+    /** 采摘招募：管理员为已通过用户标记到岗签到 */
+    IndustryApplication adminCheckInPick(Long applicationId);
 }
 
