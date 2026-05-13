@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fuding.common.Result;
 import com.fuding.entity.CultureContent;
 import com.fuding.service.CultureService;
+import com.fuding.service.IndustryApplicationService;
 import com.fuding.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,24 @@ public class CultureController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private IndustryApplicationService industryApplicationService;
+
+    private Long tryGetUserId(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            if (token == null || token.isEmpty()) {
+                return null;
+            }
+            return jwtUtil.getUserIdFromToken(token);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     /**
      * 获取内容列表
      */
@@ -36,8 +55,14 @@ public class CultureController {
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) Integer contentType,
             @RequestParam(required = false) Integer type,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            HttpServletRequest request) {
         try {
+            if (type != null && type == 5) {
+                if (!industryApplicationService.canAccessTrainingZone(tryGetUserId(request))) {
+                    return Result.error(403, "暂无权限查看培训专区，请先通过批发与培训报名审核");
+                }
+            }
             // MyBatis-Plus 的 Page 从 1 开始，前端传的是从 0 开始，需要 +1
             Page<CultureContent> contentPage = new Page<>(page + 1, size);
             IPage<CultureContent> result = cultureService.getContentList(contentPage, contentType, type, keyword);
@@ -51,12 +76,15 @@ public class CultureController {
      * 获取内容详情
      */
     @GetMapping("/{id}")
-    public Result<CultureContent> getContentDetail(@PathVariable Long id) {
+    public Result<CultureContent> getContentDetail(@PathVariable Long id, HttpServletRequest request) {
         try {
             CultureContent content = cultureService.getContentById(id);
-            // 增加浏览量
+            if (content.getType() != null && content.getType() == 5) {
+                if (!industryApplicationService.canAccessTrainingZone(tryGetUserId(request))) {
+                    return Result.error(403, "暂无权限查看培训专区，请先通过批发与培训报名审核");
+                }
+            }
             cultureService.incrementViewCount(id);
-            // 重新查询以获取更新后的浏览量
             content = cultureService.getContentById(id);
             return Result.success(content);
         } catch (Exception e) {
@@ -68,8 +96,14 @@ public class CultureController {
      * 点赞内容
      */
     @PostMapping("/{id}/like")
-    public Result<Void> likeContent(@PathVariable Long id) {
+    public Result<Void> likeContent(@PathVariable Long id, HttpServletRequest request) {
         try {
+            CultureContent content = cultureService.getContentById(id);
+            if (content.getType() != null && content.getType() == 5) {
+                if (!industryApplicationService.canAccessTrainingZone(tryGetUserId(request))) {
+                    return Result.error(403, "暂无权限查看培训专区，请先通过批发与培训报名审核");
+                }
+            }
             cultureService.likeContent(id);
             return Result.success("点赞成功", null);
         } catch (Exception e) {
@@ -81,8 +115,14 @@ public class CultureController {
      * 取消点赞
      */
     @DeleteMapping("/{id}/like")
-    public Result<Void> unlikeContent(@PathVariable Long id) {
+    public Result<Void> unlikeContent(@PathVariable Long id, HttpServletRequest request) {
         try {
+            CultureContent content = cultureService.getContentById(id);
+            if (content.getType() != null && content.getType() == 5) {
+                if (!industryApplicationService.canAccessTrainingZone(tryGetUserId(request))) {
+                    return Result.error(403, "暂无权限查看培训专区，请先通过批发与培训报名审核");
+                }
+            }
             cultureService.unlikeContent(id);
             return Result.success("取消点赞成功", null);
         } catch (Exception e) {

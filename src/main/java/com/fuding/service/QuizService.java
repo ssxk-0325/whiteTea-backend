@@ -19,9 +19,14 @@ public interface QuizService {
     IPage<QuizQuestion> getQuestionList(Page<QuizQuestion> page, Integer category, Integer difficulty, String keyword, Long userId);
 
     /**
-     * 获取问题详情
+     * 获取问题详情（含浏览量自增）
      */
     QuizQuestion getQuestionById(Long id);
+
+    /**
+     * 获取已发布问题元数据（不增加浏览量，用于权限判断）
+     */
+    QuizQuestion getQuestionPreview(Long id);
 
     /**
      * 提交答案

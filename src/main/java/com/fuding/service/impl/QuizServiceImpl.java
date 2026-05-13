@@ -107,6 +107,15 @@ public class QuizServiceImpl extends ServiceImpl<QuizQuestionMapper, QuizQuestio
     }
 
     @Override
+    public QuizQuestion getQuestionPreview(Long id) {
+        QuizQuestion question = questionMapper.selectById(id);
+        if (question == null || question.getStatus() != 1) {
+            return null;
+        }
+        return question;
+    }
+
+    @Override
     public QuizAnswer submitAnswer(Long userId, Long questionId, Integer userAnswer) {
         // 检查问题是否存在
         QuizQuestion question = questionMapper.selectById(questionId);

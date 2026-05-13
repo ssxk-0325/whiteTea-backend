@@ -25,5 +25,10 @@ public interface IndustryApplicationService {
 
     /** 采摘招募：管理员为已通过用户标记到岗签到 */
     IndustryApplication adminCheckInPick(Long applicationId);
+
+    /**
+     * 是否可浏览「培训专区」文化/问答：管理员，或存在任一已通过「批发与培训」(活动 type=6) 的产业报名
+     */
+    boolean canAccessTrainingZone(Long userId);
 }
 

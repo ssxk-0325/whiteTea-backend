@@ -39,7 +39,7 @@ public class CultureContent extends BaseEntity {
     private Integer contentType = 1;
 
     /**
-     * 分类类型：1-白茶知识，2-制作工艺，3-品鉴技巧，4-历史文化
+     * 分类类型：1-白茶知识，2-制作工艺，3-品鉴技巧，4-历史文化，5-培训专区（批发培训延伸内容）
      */
     @TableField("type")
     private Integer type = 1;

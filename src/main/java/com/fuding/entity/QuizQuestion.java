@@ -39,7 +39,7 @@ public class QuizQuestion extends BaseEntity {
     private String explanation;
 
     /**
-     * 分类：1-互动，2-文化，3-活动
+     * 分类：1-互动，2-文化，3-活动，4-培训专区（批发培训配套问答）
      */
     @TableField("category")
     private Integer category = 1;

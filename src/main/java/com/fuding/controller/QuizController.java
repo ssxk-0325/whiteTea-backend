@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fuding.common.Result;
 import com.fuding.entity.QuizAnswer;
 import com.fuding.entity.QuizQuestion;
+import com.fuding.service.IndustryApplicationService;
 import com.fuding.service.QuizService;
 import com.fuding.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,24 @@ public class QuizController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private IndustryApplicationService industryApplicationService;
+
+    private Long tryGetUserId(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            if (token == null || token.isEmpty()) {
+                return null;
+            }
+            return jwtUtil.getUserIdFromToken(token);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     /**
      * 获取问题列表
@@ -53,6 +72,11 @@ public class QuizController {
             } catch (Exception e) {
                 // 未登录，userId保持为null
             }
+            if (category != null && category == 4) {
+                if (!industryApplicationService.canAccessTrainingZone(userId)) {
+                    return Result.error(403, "暂无权限查看培训专区，请先通过批发与培训报名审核");
+                }
+            }
             IPage<QuizQuestion> result = quizService.getQuestionList(questionPage, category, difficulty, keyword, userId);
             return Result.success(result);
         } catch (Exception e) {
@@ -64,8 +88,17 @@ public class QuizController {
      * 获取问题详情
      */
     @GetMapping("/{id}")
-    public Result<QuizQuestion> getQuestionDetail(@PathVariable Long id) {
+    public Result<QuizQuestion> getQuestionDetail(@PathVariable Long id, HttpServletRequest request) {
         try {
+            QuizQuestion preview = quizService.getQuestionPreview(id);
+            if (preview == null) {
+                return Result.error("问题不存在或已删除");
+            }
+            if (preview.getCategory() != null && preview.getCategory() == 4) {
+                if (!industryApplicationService.canAccessTrainingZone(tryGetUserId(request))) {
+                    return Result.error(403, "暂无权限查看培训专区，请先通过批发与培训报名审核");
+                }
+            }
             QuizQuestion question = quizService.getQuestionById(id);
             return Result.success(question);
         } catch (Exception e) {
@@ -87,6 +120,16 @@ public class QuizController {
                 token = token.substring(7);
             }
             Long userId = jwtUtil.getUserIdFromToken(token);
+
+            QuizQuestion preview = quizService.getQuestionPreview(id);
+            if (preview == null) {
+                return Result.error("问题不存在或已删除");
+            }
+            if (preview.getCategory() != null && preview.getCategory() == 4) {
+                if (!industryApplicationService.canAccessTrainingZone(userId)) {
+                    return Result.error(403, "暂无权限查看培训专区，请先通过批发与培训报名审核");
+                }
+            }
 
             Integer userAnswer = Integer.valueOf(params.get("userAnswer").toString());
             QuizAnswer answer = quizService.submitAnswer(userId, id, userAnswer);

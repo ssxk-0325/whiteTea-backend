@@ -296,5 +296,22 @@ public class IndustryApplicationServiceImpl extends ServiceImpl<IndustryApplicat
         applicationMapper.updateById(app);
         return app;
     }
+
+    @Override
+    public boolean canAccessTrainingZone(Long userId) {
+        if (userId == null) {
+            return false;
+        }
+        User u = userMapper.selectById(userId);
+        if (u != null && u.getUserType() != null && u.getUserType() == 1) {
+            return true;
+        }
+        LambdaQueryWrapper<IndustryApplication> w = new LambdaQueryWrapper<>();
+        w.eq(IndustryApplication::getUserId, userId)
+                .eq(IndustryApplication::getStatus, 1)
+                .inSql(IndustryApplication::getActivityId,
+                        "SELECT id FROM tb_experience_activity WHERE type = 6 AND deleted = 0 AND (status IS NULL OR status <> 3)");
+        return applicationMapper.selectCount(w) > 0;
+    }
 }
 

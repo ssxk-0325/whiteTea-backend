@@ -103,6 +103,7 @@ public class CultureServiceImpl extends ServiceImpl<CultureContentMapper, Cultur
     public List<CultureContent> getHotContents(Integer contentType, Integer limit) {
         LambdaQueryWrapper<CultureContent> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(CultureContent::getStatus, 1);
+        wrapper.ne(CultureContent::getType, 5);
         if (contentType != null) {
             wrapper.eq(CultureContent::getContentType, contentType);
         }
